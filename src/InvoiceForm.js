@@ -5,6 +5,8 @@ import './App.css';
 
 function InvoiceForm() {
   const [currentDate, setCurrentDate] = useState('');
+  const [itemDescriptions, setItemDescriptions] = useState([]); // Add this line
+
 
   useEffect(() => {
     // Get current date in yyyy-mm-dd format
@@ -25,9 +27,17 @@ function InvoiceForm() {
 
   useEffect(() => {
     // Fetch invoice numbers from Invoice Master Table
-    fetch('http://localhost:3001/invoice') // corrected to fetch from Invoice Master table
-      .then(response => response.json())
-      .then(data => setInvoiceNumbers(data));
+    // fetch('http://localhost:3001/invoice') // corrected to fetch from Invoice Master table
+    //   .then(response => response.json())
+    //   .then(data => setInvoiceNumbers(data));
+     // Fetch invoice numbers from Invoice Master Table
+     fetch('http://localhost:3001/invoice')
+     .then(response => response.json())
+     .then(data => {
+         console.log('Fetched Invoice Numbers:', data); // Log the fetched data
+         setInvoiceNumbers(data);
+     })
+     .catch(error => console.error('Error fetching invoice numbers:', error));
 
     // Fetch salesmen from Employee Table
     fetch('http://localhost:3001/salesmen')
@@ -39,12 +49,50 @@ function InvoiceForm() {
       .then(response => response.json())
       .then(data => setCustomersOptions(data));
 
-    // Fetch item names from Product Table
-    fetch('http://localhost:3001/items') // corrected to fetch from Product table
-      .then(response => response.json())
-      .then(data => setItemNames(data));
-  }, []);
-
+      const fetchItems = async () => {
+        try {
+          const response = await fetch('http://localhost:3001/items');
+          const data = await response.json();
+          setItemDescriptions(data); 
+        } catch (error) {
+          console.error('Error fetching item descriptions:', error);
+        }
+      };
+  
+      fetchItems();
+    }, []);
+  const handleSave = () => {
+    const invoiceData = {
+      items,
+      salesman,
+      customer,
+      invoiceNumber,
+      invoiceDate: currentDate,
+    };
+  
+    console.log('Invoice Data:', invoiceData); // Log the data being sent
+  
+    fetch('http://localhost:3001/invoice/save', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(invoiceData),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        alert(data.message);
+        setItems([]);
+        setSalesman('');
+        setCustomer('');
+        setInvoiceNumber('');
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
+  };
+  
+  
   const handleDelete = (index) => {
     const deletedItem = items[index];
     const newItems = items.filter((_, i) => i !== index);
@@ -95,9 +143,12 @@ function InvoiceForm() {
   
   <div className="col d-flex justify-content-end" style={{flex:"1 1 10%"}}>
     <div className="col-auto mx-2">
-      <button className="btn btn-success">
+      {/* <button className="btn btn-success">
         <i className="bi bi-check"></i> Save
-      </button>
+      </button> */}
+      <button className="btn btn-success" onClick={handleSave}>
+  <i className="bi bi-check"></i> Save
+</button>
     </div>
     <div className="col-auto mx-2">
       <button className="btn dark-blue text-white">
@@ -115,12 +166,19 @@ function InvoiceForm() {
     <div className="col-md-4 d-flex position-relative">
       <label className="text-nowrap" style={{flex: "1 1 30%", marginRight: "5px"}}>INV NO</label>
       <div style={{flex: "1 1 65%", position: "relative"}}>
-        <select className="form-control" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} style={{width: "100%", paddingRight: "30px", appearance: "none"}}>
+        {/* <select className="form-control" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} style={{width: "100%", paddingRight: "30px", appearance: "none"}}>
           <option value="">Select Invoice</option>
           {invoiceNumbers.map((inv, index) => (
             <option key={index} value={inv.invoice_number}>{inv.invoice_number}</option>
           ))}
-        </select>
+        </select> */}
+        <select className="form-control" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} style={{width: "100%", paddingRight: "30px", appearance: "none"}}>
+    <option value="">Select Invoice</option>
+    {invoiceNumbers.map((inv, index) => (
+        <option key={index} value={inv.invoice_number}>{inv.invoice_number}</option> // Ensure this matches your fetched data structure
+    ))}
+</select>
+
       </div>
     </div>
   </div>
@@ -185,7 +243,7 @@ function InvoiceForm() {
   <div className="col-md-3 position-relative">
     <label>Item Name</label>
     <div style={{ position: 'relative' }}>
-      <select
+      {/* <select
         className="form-control"
         style={{ paddingRight: '30px' }} // Add padding to make space for the icon
         value={newItem.itemName}
@@ -197,7 +255,21 @@ function InvoiceForm() {
             {item.product_name}
           </option>
         ))}
-      </select>
+      </select> */}
+      <select
+  className="form-control"
+  style={{ paddingRight: '30px' }} // Add padding to make space for the icon
+  value={newItem.itemName}
+  onChange={(e) => setNewItem({ ...newItem, itemName: e.target.value })} 
+>
+  <option value="">Select Item</option>
+  {itemDescriptions.map((item, index) => ( // Update itemNames to itemDescriptions
+    <option key={index} value={item.product_desc}>
+      {item.product_desc} 
+    </option>
+  ))}
+</select>
+
       <i
         className="bi bi-chevron-down"
         style={{
@@ -310,79 +382,61 @@ function InvoiceForm() {
     <div className="row mt-3" style={{width:"100%"}}>
   <div className="col">
     <label>Remarks</label>
-    <textarea className="form-control" rows="3" placeholder="Enter remarks"></textarea>
+    <textarea className="form-control mt-2" rows="3" placeholder="Enter remarks"></textarea>
   </div>
 
   {/* Totals */}
   <div className="col-md-4 d-flex justify-content-end">
-    {/* <table className="table">
-      <tbody>
-        <tr>
-          <td>Sub Total:</td>
-          <td>{totals.subTotal}</td>
-        </tr>
-        <tr>
-          <td>Discount Total:</td>
-          <td>{totals.discountTotal}</td>
-        </tr>
-        <tr>
-          <td>Freight Total:</td>
-          <td>{totals.freightTotal}</td>
-        </tr>
-        <tr>
-          <td>Expense Total:</td>
-          <td>{totals.expenseTotal}</td>
-        </tr>
-        <tr>
-          <td><strong>Total Amount:</strong></td>
-          <td><strong>{totals.subTotal - totals.discountTotal + totals.freightTotal + totals.expenseTotal}</strong></td>
-        </tr>
-      </tbody>
-    </table> */}
-    <table className="table" style={{ backgroundColor: '#f0f0f0' }}>
+    
+  <table className="table mt-4" style={{ backgroundColor: '#e0e0e0', borderCollapse: 'collapse', width: '100%' }}>
   <tbody>
     <tr>
       <td>Sub Total:</td>
-      <td style={{ backgroundColor: '#d3d3d3', border: '1px solid #000', padding: '10px' }}>
-        <div style={{ border: '1px solid #000', padding: '5px', textAlign: 'center' }}>
+      <td>
+        <div style={{ border: '1px solid grey', display: 'inline-block', width: '150px', textAlign: 'center', 
+          padding: '5px', borderRadius: '5px', backgroundColor: '#d3d3d3' }}>
           {totals.subTotal}
         </div>
       </td>
     </tr>
     <tr>
       <td>Discount Total:</td>
-      <td style={{ border: '1px solid #000', padding: '10px' }}>
-        <div style={{ border: '1px solid #000', padding: '5px', textAlign: 'center' }}>
+      <td>
+        <div style={{ border: '1px solid grey', display: 'inline-block', width: '150px', textAlign: 'center', 
+          padding: '5px', borderRadius: '5px', }}>
           {totals.discountTotal}
         </div>
       </td>
     </tr>
     <tr>
       <td>Freight Total:</td>
-      <td style={{ border: '1px solid #000', padding: '10px' }}>
-        <div style={{ border: '1px solid #000', padding: '5px', textAlign: 'center' }}>
+      <td>
+        <div style={{ border: '1px solid grey', display: 'inline-block', width: '150px', textAlign: 'center', padding: '5px',
+           borderRadius: '5px',}}>
           {totals.freightTotal}
         </div>
       </td>
     </tr>
     <tr>
       <td>Expense Total:</td>
-      <td style={{ border: '1px solid #000', padding: '10px' }}>
-        <div style={{ border: '1px solid #000', padding: '5px', textAlign: 'center' }}>
+      <td>
+        <div style={{ border: '1px solid grey', display: 'inline-block', width: '150px',
+           textAlign: 'center', padding: '5px', borderRadius: '5px',  }}>
           {totals.expenseTotal}
         </div>
       </td>
     </tr>
     <tr>
-      <td><strong>Total Amount:</strong></td>
-      <td style={{ backgroundColor: '#b0b0b0', border: '1px solid #000', padding: '10px' }}>
-        <div style={{ border: '1px solid #000', padding: '5px', textAlign: 'center' }}>
+      <td><strong>Net Total:</strong></td>
+      <td>
+        <div style={{ border: '1px solid grey', display: 'inline-block', width: '150px', textAlign: 'center', padding: '5px', borderRadius: '5px', backgroundColor: '#d3d3d3' }}>
           <strong>{totals.subTotal - totals.discountTotal + totals.freightTotal + totals.expenseTotal}</strong>
         </div>
       </td>
     </tr>
   </tbody>
 </table>
+
 
   </div>
 </div>
