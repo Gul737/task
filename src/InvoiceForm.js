@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import Cookies from 'js-cookie';
 
   
 
 function InvoiceForm() {
+  const selectedEmployee = Cookies.get('selectedEmployee');
   const [currentDate, setCurrentDate] = useState('');
   const [itemDescriptions, setItemDescriptions] = useState([]); // Add this line
 
@@ -22,7 +24,7 @@ function InvoiceForm() {
 
   const [salesmenOptions, setSalesmenOptions] = useState([]);
   const [customersOptions, setCustomersOptions] = useState([]);
-  const [invoiceNumbers, setInvoiceNumbers] = useState([]);
+  //const [invoiceNumbers, setInvoiceNumbers] = useState([]);
   const [itemNames, setItemNames] = useState([]);
 
   useEffect(() => {
@@ -31,13 +33,44 @@ function InvoiceForm() {
     //   .then(response => response.json())
     //   .then(data => setInvoiceNumbers(data));
      // Fetch invoice numbers from Invoice Master Table
-     fetch('http://localhost:3001/invoice')
-     .then(response => response.json())
-     .then(data => {
-         console.log('Fetched Invoice Numbers:', data); // Log the fetched data
-         setInvoiceNumbers(data);
-     })
-     .catch(error => console.error('Error fetching invoice numbers:', error));
+    //  fetch('http://localhost:3001/invoice')
+    //  .then(response => response.json())
+    //  .then(data => {
+    //      console.log('Fetched Invoice Numbers:', data); // Log the fetched data
+    //      setInvoiceNumbers(data);
+    //  })
+    //  .catch(error => console.error('Error fetching invoice numbers:', error));
+  //   fetch('http://localhost:3001/invoice')
+  //   .then(response => response.json())
+  //   .then(data => {
+  //       //console.log('Fetched Invoice Number:', data.invoice_number); // Log the fetched invoice number
+  //      //setInvoiceNumber(data.invoice_number); // Assuming `setInvoiceNumber` is your state handler
+  //     // setInvoiceNumber(1029);
+  //   //})
+  //   //.then(invoiceNumber => {
+  //     console.log('Fetched Invoice Number:', invoiceNumber); // Log the fetched invoice number
+  //     setInvoiceNumber(invoiceNumber); // Set the fetched invoice number
+  // })
+  //   .catch(error => console.error('Error fetching invoice number:', error));
+  fetch('http://localhost:3001/invoice')
+  .then(response => {
+      if (!response.ok) {
+          return response.text().then(text => {
+              throw new Error(text); // Throw an error with the response text
+          });
+      }
+      return response.json();
+  })
+  .then(data => {
+      console.log('Fetched Invoice Data:', data);
+      if (data.invoice_number !== undefined) {
+          setInvoiceNumber(data.invoice_number);
+      } else {
+          console.error('Invoice number is null or undefined');
+      }
+  })
+  .catch(error => console.error('Error fetching invoice number:', error));
+
 
     // Fetch salesmen from Employee Table
     fetch('http://localhost:3001/salesmen')
@@ -117,10 +150,13 @@ function InvoiceForm() {
 
  
   return (
-    <div className="container " style={{ background: '#4674a6' ,maxWidth:"2000px"}}>
+    <div class="ap_container">
+        <div class="ap_wrap">
+    <div className="container bg-l" style={{ maxWidth:"2000px"}}>
+     <p>Selected Branch: {selectedEmployee}</p>
 
-      <div className="row mb-3">
-  <div className="col d-flex justify-content-end" style={{flex:"1 1 60%"}}>
+      {/* <div className="row"> */}
+  {/* <div className="col d-flex justify-content-end" style={{flex:"1 1 60%"}}>
     <div className="col-auto mx-2">
       <button className="btn dark-blue text-white">Load</button>
     </div>
@@ -145,7 +181,7 @@ function InvoiceForm() {
     <div className="col-auto mx-2">
       {/* <button className="btn btn-success">
         <i className="bi bi-check"></i> Save
-      </button> */}
+      </button> 
       <button className="btn btn-success" onClick={handleSave}>
   <i className="bi bi-check"></i> Save
 </button>
@@ -155,40 +191,52 @@ function InvoiceForm() {
         <i className="bi bi-pencil-square text-white px-2"></i> Modify
       </button>
     </div>
-  </div>
-</div>
-<div className="container d-flex justify-content-center align-items-center flex-column" >
+  </div> */}
+{/* </div> */}
+<div className="container d-flex justify-content-center align-items-center flex-column inv-layout" >
       {/* Invoice Information */}
       <div>
 <div>
   {/* First Row */}
-  <div className="row mb-3">  {/* Adjusted distance */}
+  <div className="row ">  {/* Adjusted distance */}
     <div className="col-md-4 d-flex position-relative">
-      <label className="text-nowrap" style={{flex: "1 1 30%", marginRight: "5px"}}>INV NO</label>
-      <div style={{flex: "1 1 65%", position: "relative"}}>
+      <label className="text-nowrap txt-dec">INV NO</label>
+      <span className='txt-dec px-4'>{invoiceNumber}3</span>
+      {/* <div style={{flex: "1 1 65%", position: "relative"}}>
         {/* <select className="form-control" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} style={{width: "100%", paddingRight: "30px", appearance: "none"}}>
           <option value="">Select Invoice</option>
           {invoiceNumbers.map((inv, index) => (
             <option key={index} value={inv.invoice_number}>{inv.invoice_number}</option>
           ))}
-        </select> */}
-        <select className="form-control" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} style={{width: "100%", paddingRight: "30px", appearance: "none"}}>
+        </select> 
+        <div className="" value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} style={{width: "100%", paddingRight: "30px", appearance: "none"}}>
+    
     <option value="">Select Invoice</option>
     {invoiceNumbers.map((inv, index) => (
         <option key={index} value={inv.invoice_number}>{inv.invoice_number}</option> // Ensure this matches your fetched data structure
     ))}
-</select>
+</div>
 
-      </div>
+      </div> */}
     </div>
   </div>
-
+  
+  <div className="row mb-3">  {/* Adjusted distance */}
+    <div className="col-md-4 d-flex position-relative">
+      <label className="text-nowrap txt-dec">Invoice Date</label>
+      <span className="txt-dec px-4">{currentDate}</span>
+    </div>
+      
+      {/* <span className='txt-dec px-4'>{invoiceNumber}1</span>
+      </div> */}
+      </div>
+  <hr className="my-5"/>
   {/* Second Row */}
   <div className="row mb-3">  {/* Adjusted distance */}
     <div className="col-md-4 d-flex position-relative">
-      <label className="text-nowrap" style={{flex: "1 1 30%", marginRight: "5px"}}>Salesman</label>
+      <label className="text-nowrap bold" style={{flex: "1 1 30%", marginRight: "5px"}}>Salesman</label>
       <div style={{flex: "1 1 65%", position: "relative"}}>
-        <select className="form-control" style={{width: "100%", backgroundColor: "lightgrey", paddingRight: "30px", appearance: "none"}} value={salesman} onChange={(e) => setSalesman(e.target.value)}>
+        <select className="form-control" style={{width: "100%", paddingRight: "30px", appearance: "none"}} value={salesman} onChange={(e) => setSalesman(e.target.value)}>
           <option value="">Select Salesman</option>
           {salesmenOptions.map((option, index) => (
             <option key={index} value={option.emp_name}>{option.emp_name}</option>
@@ -200,16 +248,16 @@ function InvoiceForm() {
     </div>
 
     {/* Invoice Date */}
-    <div className="col-md-3 d-flex" style={{marginLeft: "10%", alignItems: "center"}}>
+    {/* <div className="col-md-3 d-flex" style={{marginLeft: "10%", alignItems: "center"}}>
       <label className="text-nowrap" style={{flex: "1 1 30%", marginRight: "5px"}}>Invoice Date</label>
       <input type="date" className="form-control" value={currentDate} style={{flex: "1 1 65%"}} readOnly />
-    </div>
+    </div> */}
   </div>
 
   {/* Third Row */}
   <div className="row mb-3">  {/* Adjusted distance */}
     <div className="col-md-4 d-flex position-relative">
-      <label className="text-nowrap" style={{flex: "1 1 30%", marginRight: "5px"}}>Customer</label>
+      <label className="text-nowrap bold" style={{flex: "1 1 30%", marginRight: "5px"}}>Customer</label>
       <div style={{flex: "1 1 65%", position: "relative"}}>
         <select className="form-control" style={{width: "100%", paddingRight: "30px", appearance: "none"}} value={customer} onChange={(e) => setCustomer(e.target.value)}>
           <option value="">Select Customer</option>
@@ -224,7 +272,7 @@ function InvoiceForm() {
 
     {/* Terms */}
     <div className="col-md-3 d-flex" style={{marginLeft: "10%", alignItems: "center"}}>
-      <label className="text-nowrap" style={{flex: "1 1 30%", marginRight: "5px"}}>Terms</label>
+      <label className="text-nowrap bold" style={{flex: "1 1 30%", marginRight: "5px"}}>Terms</label>
       <div style={{flex: "1 1 65%", position: "relative"}}>
         <select className="form-control" style={{width: "100%", paddingRight: "30px", appearance: "none"}}>
           <option value="cash">Cash</option>
@@ -237,11 +285,11 @@ function InvoiceForm() {
   </div>
 </div>
 
-      <hr className="bg-white py-1 mt-5 mb-5" style={{ borderTop: "1px solid white" }} />
-   
+      <hr className="my-5"/>
+{/*    
       <div className="row mb-4">
   <div className="col-md-3 position-relative">
-    <label>Item Name</label>
+    <label className='bold'>Item Name</label>
     <div style={{ position: 'relative' }}>
       {/* <select
         className="form-control"
@@ -255,9 +303,9 @@ function InvoiceForm() {
             {item.product_name}
           </option>
         ))}
-      </select> */}
+      </select> 
       <select
-  className="form-control"
+  className="form-control mt-3"
   style={{ paddingRight: '30px' }} // Add padding to make space for the icon
   value={newItem.itemName}
   onChange={(e) => setNewItem({ ...newItem, itemName: e.target.value })} 
@@ -284,40 +332,40 @@ function InvoiceForm() {
   </div>
 
   <div style={{ flex: "0 0 10%", maxWidth: "10%", marginRight: "1%" }}>
-  <label>Qty</label>
+  <label className='bold'>Qty</label>
   <input
     type="number"
-    className="form-control"
+    className="form-control mt-3"
     value={newItem.qty}
     onChange={(e) => setNewItem({ ...newItem, qty: parseInt(e.target.value) })}
     placeholder="Quantity"
   />
 </div>
 <div style={{ flex: "0 0 10%", maxWidth: "10%", marginRight: "1%" }}>
-  <label>Bonus</label>
+  <label className='bold'>Bonus</label>
   <input
     type="number"
-    className="form-control"
+    className="form-control mt-3"
     value={newItem.bonus}
     onChange={(e) => setNewItem({ ...newItem, bonus: parseInt(e.target.value) })}
     placeholder="Bonus"
   />
 </div>
 <div style={{ flex: "0 0 10%", maxWidth: "10%", marginRight: "1%" }}>
-  <label>Rate</label>
+  <label className='bold'>Rate</label>
   <input
     type="number"
-    className="form-control"
+    className="form-control mt-3"
     value={newItem.rate}
     onChange={(e) => setNewItem({ ...newItem, rate: parseFloat(e.target.value) })}
     placeholder="Rate"
   />
 </div>
 <div style={{ flex: "0 0 10%", maxWidth: "10%", marginRight: "1%" }}>
-  <label>Discount</label>
+  <label className='bold'>Discount</label>
   <input
     type="number"
-    className="form-control"
+    className="form-control mt-3"
     value={newItem.discount}
     onChange={(e) => setNewItem({ ...newItem, discount: parseFloat(e.target.value) })}
     placeholder="Discount"
@@ -325,28 +373,194 @@ function InvoiceForm() {
 </div>
 
   <div className="col-md-2">
-    <label>Remarks</label>
-    <input type="text" className="form-control" placeholder="Remarks" />
+    <label className='bold'>Remarks</label>
+    <input type="text" className="form-control mt-3" placeholder="Remarks" />
   </div>
 
   <div className="col-md-1">
     <button
-      className="btn btn-success mt-4"
+      className="btn btn-success"
       onClick={handleAddItem}
-      style={{ fontSize: '1rem', fontWeight: 'bold' }} // Increase the size and bold the plus icon
+      style={{ fontSize: '1rem', fontWeight: 'bold',marginTop:"40px" }} // Increase the size and bold the plus icon
     >
       <i className="bi bi-plus"></i>
     </button>
   </div>
-</div>
+</div> */}
 
+{/* <table>
+  <thead>
+    <tr>
+      <th>Item Name</th>
+      <th>Qty</th>
+      <th>Bonus</th>
+      <th>Rate</th>
+      <th>Discount</th>
+      <th>Remarks</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <select
+          className="form-control"
+          value={newItem.itemName}
+          onChange={(e) => setNewItem({ ...newItem, itemName: e.target.value })}
+        >
+          <option value="">Select Item</option>
+          {itemDescriptions.map((item, index) => (
+            <option key={index} value={item.product_desc}>
+              {item.product_desc}
+            </option>
+          ))}
+        </select>
+      </td>
+      <td>
+        <input
+          type="number"
+          className="form-control"
+          value={newItem.qty}
+          onChange={(e) => setNewItem({ ...newItem, qty: parseInt(e.target.value) })}
+          placeholder="Quantity"
+        />
+      </td>
+      <td>
+        <input
+          type="number"
+          className="form-control"
+          value={newItem.bonus}
+          onChange={(e) => setNewItem({ ...newItem, bonus: parseInt(e.target.value) })}
+          placeholder="Bonus"
+        />
+      </td>
+      <td>
+        <input
+          type="number"
+          className="form-control"
+          value={newItem.rate}
+          onChange={(e) => setNewItem({ ...newItem, rate: parseFloat(e.target.value) })}
+          placeholder="Rate"
+        />
+      </td>
+      <td>
+        <input
+          type="number"
+          className="form-control"
+          value={newItem.discount}
+          onChange={(e) => setNewItem({ ...newItem, discount: parseFloat(e.target.value) })}
+          placeholder="Discount"
+        />
+      </td>
+      <td>
+        <input
+          type="text"
+          className="form-control"
+          placeholder="Remarks"
+        />
+      </td>
+      <td>
+        <button
+          className="btn btn-success"
+          onClick={handleAddItem}
+          style={{ fontSize: '1rem', fontWeight: 'bold' }}
+        >
+          <i className="bi bi-plus"></i>
+        </button>
+      </td>
+    </tr>
+  </tbody>
+</table> */}
+<table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
+  <thead>
+    <tr style={{ backgroundColor: 'purple', color: 'white', textAlign: 'center' }}>
+      <th style={{ padding: '10px' }}>Item Name</th>
+      <th style={{ padding: '10px' }}>Qty</th>
+      <th style={{ padding: '10px' }}>Bonus</th>
+      <th style={{ padding: '10px' }}>Rate</th>
+      <th style={{ padding: '10px' }}>Discount</th>
+      <th style={{ padding: '10px' }}>Remarks</th>
+      <th style={{ padding: '10px' }}>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style={{ padding: '10px' }}>
+        <select
+          className="form-control"
+          value={newItem.itemName}
+          onChange={(e) => setNewItem({ ...newItem, itemName: e.target.value })}
+        >
+          <option value="">Select Item</option>
+          {itemDescriptions.map((item, index) => (
+            <option key={index} value={item.product_desc}>
+              {item.product_desc}
+            </option>
+          ))}
+        </select>
+      </td>
+      <td style={{ padding: '10px' }}>
+        <input
+          type="number"
+          className="form-control"
+          value={newItem.qty}
+          onChange={(e) => setNewItem({ ...newItem, qty: parseInt(e.target.value) })}
+          placeholder="Quantity"
+        />
+      </td>
+      <td style={{ padding: '10px' }}>
+        <input
+          type="number"
+          className="form-control"
+          value={newItem.bonus}
+          onChange={(e) => setNewItem({ ...newItem, bonus: parseInt(e.target.value) })}
+          placeholder="Bonus"
+        />
+      </td>
+      <td style={{ padding: '10px' }}>
+        <input
+          type="number"
+          className="form-control"
+          value={newItem.rate}
+          onChange={(e) => setNewItem({ ...newItem, rate: parseFloat(e.target.value) })}
+          placeholder="Rate"
+        />
+      </td>
+      <td style={{ padding: '10px' }}>
+        <input
+          type="number"
+          className="form-control"
+          value={newItem.discount}
+          onChange={(e) => setNewItem({ ...newItem, discount: parseFloat(e.target.value) })}
+          placeholder="Discount"
+        />
+      </td>
+      <td style={{ padding: '10px' }}>
+        <input
+          type="text"
+          className="form-control"
+          placeholder="Remarks"
+        />
+      </td>
+      <td style={{ padding: '10px' }}>
+        <button
+          className="btn btn-success"
+          onClick={handleAddItem}
+          style={{ fontSize: '1rem', fontWeight: 'bold' }}
+        >
+          <i className="bi bi-plus"></i>
+        </button>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
       {/* Items Table */}
       {items.length > 0 && (
-      <table className="table table-bordered mt-5">
-      <thead style={{ backgroundColor: 'grey !important' }}>
+      <table className="mt-5">
+      <thead>
 
-          <tr>
+          <tr >
             <th></th>
             <th>No</th>
             <th>Description</th>
@@ -357,7 +571,7 @@ function InvoiceForm() {
             <th>Total</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className='my-4'>
           {items.map((item, index) => (
             <tr key={index}>
               <td>
@@ -378,58 +592,73 @@ function InvoiceForm() {
       </table>
       )}
 </div>
-
-    <div className="row mt-3" style={{width:"100%"}}>
-  <div className="col">
+<div className='d-flex justify-content-end w-100 px-5 my-5'>
+    <div className="row my-3 py-3" style={{width:"55%",border:"2px solid #98198e",borderRadius:"20px",padding:"0 20px",zIndex:"1"}}>
+  {/* <div className="col">
     <label>Remarks</label>
     <textarea className="form-control mt-2" rows="3" placeholder="Enter remarks"></textarea>
-  </div>
+  </div> */}
 
   {/* Totals */}
-  <div className="col-md-4 d-flex justify-content-end">
+  <div className=" d-flex justify-content-end">
     
-  <table className="table mt-4" style={{ backgroundColor: '#e0e0e0', borderCollapse: 'collapse', width: '100%' }}>
+  <table className="mt-4" style={{ backgroundColor: '#e0e.0e0', borderCollapse: 'collapse', width: '100%' }}>
   <tbody>
     <tr>
-      <td>Sub Total:</td>
+      <td className='txt-dec'>Sub Total:</td>
       <td>
-        <div style={{ border: '1px solid grey', display: 'inline-block', width: '150px', textAlign: 'center', 
-          padding: '5px', borderRadius: '5px', backgroundColor: '#d3d3d3' }}>
+        <div className='bold'
+        // style={{ border: '1px solid grey', display: 'inline-block', width: '150px', textAlign: 'center', 
+        //   padding: '5px', borderRadius: '5px', backgroundColor: '#d3d3d3' }}
+          >
           {totals.subTotal}
         </div>
       </td>
     </tr>
     <tr>
-      <td>Discount Total:</td>
+      <td className='txt-dec'>Discount Total:</td>
       <td>
-        <div style={{ border: '1px solid grey', display: 'inline-block', width: '150px', textAlign: 'center', 
-          padding: '5px', borderRadius: '5px', }}>
+        <div className='bold'
+        // style={{ border: '1px solid grey', display: 'inline-block', width: '150px', textAlign: 'center', 
+        //   padding: '5px', borderRadius: '5px', }}
+          >
           {totals.discountTotal}
         </div>
       </td>
     </tr>
     <tr>
-      <td>Freight Total:</td>
+      <td className='txt-dec'>Freight Total:</td>
       <td>
-        <div style={{ border: '1px solid grey', display: 'inline-block', width: '150px', textAlign: 'center', padding: '5px',
-           borderRadius: '5px',}}>
+        <div
+        className='bold'
+        //  style={{ border: '1px solid grey', display: 'inline-block', width: '150px', textAlign: 'center', padding: '5px',
+        //    borderRadius: '5px',}}
+           >
           {totals.freightTotal}
         </div>
       </td>
     </tr>
     <tr>
-      <td>Expense Total:</td>
+      <td className='txt-dec'>Expense Total:</td>
       <td>
-        <div style={{ border: '1px solid grey', display: 'inline-block', width: '150px',
-           textAlign: 'center', padding: '5px', borderRadius: '5px',  }}>
+        <div className='bold'
+        // style={{ border: '1px solid grey', display: 'inline-block', width: '150px',
+        //    textAlign: 'center', padding: '5px', borderRadius: '5px',  }}
+           >
           {totals.expenseTotal}
         </div>
       </td>
     </tr>
-    <tr>
+    <hr/>
+    <tr style={{background:"#800080",color:"white",margin:"1% 5%"}}>
+      
       <td><strong>Net Total:</strong></td>
       <td>
-        <div style={{ border: '1px solid grey', display: 'inline-block', width: '150px', textAlign: 'center', padding: '5px', borderRadius: '5px', backgroundColor: '#d3d3d3' }}>
+        <div 
+        // style={{  display: 'inline-block', width: '150px'
+        //   , textAlign: 'center', padding: '5px'}}
+          
+          >
           <strong>{totals.subTotal - totals.discountTotal + totals.freightTotal + totals.expenseTotal}</strong>
         </div>
       </td>
@@ -441,7 +670,9 @@ function InvoiceForm() {
   </div>
 </div>
 </div>
-
+</div>
+</div>
+</div>
     </div>
   );
 }

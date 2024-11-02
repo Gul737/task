@@ -7,7 +7,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 
 const MyNavbar = () => {
   return (
-    <Navbar bg="primary" expand="md" variant="dark" className="px-3">
+    <Navbar expand="md" variant="dark" className="px-3 last">
       <Container fluid>
         <Navbar.Toggle aria-controls="navbar-nav" />
         <Navbar.Collapse id="navbar-nav">

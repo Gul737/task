@@ -2,17 +2,21 @@ const express = require('express');
 const sql = require('mssql');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 const app = express();
 app.use(cors());
 app.use(express.json()); // Add to parse JSON bodies
 app.use(bodyParser.json());
+//const branch_id='Hashim Center';
+// import Cookies from 'js-cookie';
+// import Cookies from 'js-cookie';
 
 // SQL Server configuration
 const config = {
   user: 'sa',
   password: 'Hifza',
   server: 'localhost',
-  database: 'Task',
+  database: 'hafiz_db',
   options: {
     encrypt: false, // Disable encryption for local databases
   }
@@ -37,13 +41,20 @@ sql.connect(config).then((pool) => {
 
   // API to handle login
   app.post('/login', async (req, res) => {
-    const { login_name, password, selected_employee } = req.body;
+    console.log(req.body); 
+    const { login_name, password} = req.body;
+    // const { login_name, password, selected_employee } = req.body;
+
     try {
+      console.log('Executing login query...');
       const result = await pool.request()
         .input('login_name', sql.VarChar, login_name)
         .input('password', sql.VarChar, password)
-        .input('selected_employee', sql.VarChar, selected_employee)
-        .query('SELECT * FROM login_info WHERE login_name = @login_name AND password = @password AND emp_name = @selected_employee');
+         //.input('selected_employee', sql.VarChar, selected_employee)
+        .query('SELECT * FROM login_info WHERE login_name = @login_name AND password = @password' );
+        //console.log(selected_employee);
+        console.log('Query executed successfully:', result); // Log result
+        // .query('SELECT * FROM login_info WHERE login_name = @login_name AND password = @password AND emp_name = @selected_employee');
 
       if (result.recordset.length > 0) {
         // Update current_login to 'yes'
@@ -59,107 +70,187 @@ sql.connect(config).then((pool) => {
       res.status(500).send(err.message);
     }
   });
- 
+  app.get('/var', (req, res) => {
+    const selectedEmployee = req.cookies.selectedEmployee; // Access the cookie named 'selectedEmployee'
+    console.log('Selected Employee:', selectedEmployee);
+    res.json({ selectedEmployee }); // Respond with the cookie value
+});
+
+   //const branch_id = Cookies.get('selectedEmployee');
+  // const selectedEmployee="Hashim Branch";
+
  // API to fetch invoice numbers
+//  cookieParser
+//  const branch_id=Cookies.get('selectedEmployee');
+// app.get('/invoice',async(req,res)=>{
+//   const branch_id = req.cookies.selectedEmployee; // Access the cookie value
+//   console.log('Selected Employee:',branch_id); // This will print the value of the cookie
+
+//   // Do something with the selectedEmployee value
+//   res.send(`Selected Employee: ${branch_id}`);
+// })
+// app.get('/invoice', async (req, res) => {
+//   console.log('All cookies:', req.cookies); // Log all cookies
+//   const branch_id = req.cookies.selectedEmployee; // Access the cookie value
+
+//   if (!branch_id) {
+//     console.log('Branch ID not found');
+//     return res.status(400).send('Branch ID not found in cookies.');
+//   }
+
+//   console.log('Selected Employee:', branch_id); // Check the cookie value
+//   res.send(`Selected Employee: ${branch_id}`);
+// });
+
+//  app.get('/invoice', async (req, res) => {
+
+
+//   try {
+//    //const branch_id = req.cookies.selectedEmployee;
+//     //console.log(branch_id);
+//       const result = await pool.request()
+//           //.query('SELECT max(inv_no) + 1 AS invoice_number FROM invoice_master WHERE branch_id = `1` and status=2');
+//           .query('SELECT max(inv_no) AS invoice_number FROM invoice_master');
+          
+      
+// res.json(result.recordset[0].invoice_number); 
+//       //res.json(result.recordset[0]); // Sending just the object instead of an array
+//   } catch (err) {
+//       console.error('Query Error: ', err);
+//       res.status(500).send(err.message);
+//   }
+// });
 app.get('/invoice', async (req, res) => {
   try {
-      const result = await pool.request().query('SELECT inv_no AS invoice_number FROM invoice_master'); // Use inv_no instead of invoice_number
-      res.json(result.recordset);
+      const result = await pool.request()
+          .query('SELECT max(inv_no) AS invoice_number FROM invoice_master');
+
+      console.log('Query Result:', result.recordset);
+
+      if (result.recordset.length === 0 || result.recordset[0].invoice_number === null) {
+          return res.status(404).json({ error: 'No invoice found' });
+      }
+
+      res.json({ invoice_number: result.recordset[0].invoice_number });
+      console.log(result.recordset[0].invoice_number );
+  } catch (err) {
+      console.error('Query Error: ', err);
+      res.status(500).json({ error: err.message }); // Send JSON error response
+  }
+});
+
+
+
+// API to fetch branch codes from branch_info
+app.get('/branch_info', async (req, res) => {
+  try {
+      // Connect to the database
+      const pool = await sql.connect(config);
+      
+      // Query to fetch branch codes
+      const result = await pool.request().query('SELECT branch_name, branch_code FROM branch_info');
+      
+      // Send data back to React
+      res.json(result.recordset); 
   } catch (err) {
       console.error('Query Error: ', err);
       res.status(500).send(err.message);
+  } finally {
+      // await sql.close(); // Close the database connection
   }
 });
+
 
 // API to fetch item descriptions (from item_description)
-app.get('/items', async (req, res) => {
-  try {
-    const result = await pool.request().query('SELECT product_desc FROM item_description');
-    res.json(result.recordset); // Send data back to React
-  } catch (err) {
-    console.error('Query Error: ', err);
-    res.status(500).send(err.message);
-  }
-});
+// app.get('/items', async (req, res) => {
+//   try {
+//     const result = await pool.request().query('SELECT product_desc FROM item_description');
+//     res.json(result.recordset); // Send data back to React
+//   } catch (err) {
+//     console.error('Query Error: ', err);
+//     res.status(500).send(err.message);
+//   }
+// });
 
-  // API to fetch salesmen (from employee_info)
-  app.get('/salesmen', async (req, res) => {
+// API to fetch salesmen (from employee_info)
+   app.get('/salesmen', async (req, res) => {
     try {
-      const result = await pool.request().query('SELECT emp_name FROM employee_info');
-      res.json(result.recordset);
-    } catch (err) {
-      console.error('Query Error: ', err);
-      res.status(500).send(err.message);
-    }
-  });
+             const result = await pool.request().query('SELECT emp_name FROM employee_info where branch_id = @branch_id');
+   res.json(result.recordset);
+     } catch (err) {
+       console.error('Query Error: ', err);
+       res.status(500).send(err.message);
+     }
+   });
 
-  // API to fetch customers
-  app.get('/customers', async (req, res) => {
-    try {
-      const result = await pool.request().query('SELECT cust_name FROM customer_info');
-      res.json(result.recordset);
-    } catch (err) {
-      console.error('Query Error: ', err);
-      res.status(500).send(err.message);
-    }
-  });
+// API to fetch customers
+   app.get('/customers', async (req, res) => {
+   try {
+       const result = await pool.request().query('SELECT cust_name FROM customer_info where cust_active=1 and branch_id=@branch_id');
+       res.json(result.recordset);
+     } catch (err) {
+       console.error('Query Error: ', err);
+       res.status(500).send(err.message);
+     }
+   });
+   
 
-  // API to fetch item names (from item_description)
-  app.get('/items', async (req, res) => {
-    try {
-      const result = await pool.request().query('SELECT product_desc FROM item_description');
-      res.json(result.recordset);
-    } catch (err) {
-      console.error('Query Error: ', err);
-      res.status(500).send(err.message);
-    }
-  });
-// API to save invoice details
-app.post('/invoice/save', async (req, res) => {
-    const invoiceDetails = req.body; // Data sent from the React app
-    const transaction = new sql.Transaction(); // Start a transaction
+//   // API to fetch item names (from item_description)
+//   app.get('/items', async (req, res) => {
+//     try {
+//       const result = await pool.request().query('SELECT product_desc FROM item_description');
+//       res.json(result.recordset);
+//     } catch (err) {
+//       console.error('Query Error: ', err);
+//       res.status(500).send(err.message);
+//     }
+//   });
+// // API to save invoice details
+// app.post('/invoice/save', async (req, res) => {
+//     const invoiceDetails = req.body; // Data sent from the React app
+//     const transaction = new sql.Transaction(); // Start a transaction
   
-    try {
-      await transaction.begin(); // Begin the transaction
+//     try {
+//       await transaction.begin(); // Begin the transaction
   
-      const requests = invoiceDetails.map((detail) => {
-        return transaction.request()
-          .input('inv_code', sql.Decimal, detail.inv_code)
-          .input('status', sql.Int, detail.status)
-          .input('wk_no', sql.Int, detail.wk_no)
-          .input('branch_id', sql.VarChar, detail.branch_id)
-          .input('s_no', sql.Int, detail.s_no)
-          .input('product_code', sql.VarChar, detail.product_code) // Add product_code if available
-          .input('product_name', sql.VarChar, detail.product_name)
-          .input('rate', sql.Decimal, detail.rate)
-          .input('discount', sql.Decimal, detail.discount)
-          .input('qty', sql.Decimal, detail.qty)
-          .input('case_qty', sql.Decimal, detail.case_qty)
-          .input('remarks', sql.VarChar, detail.remarks)
-          .input('tax_amount', sql.Decimal, detail.tax_amount)
-          .input('tax_ACC', sql.Decimal, detail.tax_ACC)
-          .input('i_retail', sql.Decimal, detail.i_retail)
-          .input('i_cost', sql.Decimal, detail.i_cost)
-          .input('imei_no', sql.VarChar, detail.imei_no)
-          .input('uom', sql.VarChar, detail.uom)
-          .input('Qt_no', sql.Decimal, detail.Qt_no)
-          .input('Qt_branch', sql.VarChar, detail.Qt_branch)
-          .input('tax_perc', sql.Decimal, detail.tax_perc)
-          .input('dmg_status', sql.Int, detail.dmg_status)
-          .input('dmg_set', sql.Decimal, detail.dmg_set)
-          .input('clear_set', sql.Decimal, detail.clear_set)
-          .query(`INSERT INTO invoice_detail (inv_code, status, wk_no, branch_id, s_no, product_code, product_name, rate, discount, qty, case_qty, remarks, tax_amount, tax_ACC, i_retail, i_cost, imei_no, uom, Qt_no, Qt_branch, tax_perc, dmg_status, dmg_set, clear_set) VALUES (@inv_code, @status, @wk_no, @branch_id, @s_no, @product_code, @product_name, @rate, @discount, @qty, @case_qty, @remarks, @tax_amount, @tax_ACC, @i_retail, @i_cost, @imei_no, @uom, @Qt_no, @Qt_branch, @tax_perc, @dmg_status, @dmg_set, @clear_set)`);
-      });
+//       const requests = invoiceDetails.map((detail) => {
+//         return transaction.request()
+//           .input('inv_code', sql.Decimal, detail.inv_code)
+//           .input('status', sql.Int, detail.status)
+//           .input('wk_no', sql.Int, detail.wk_no)
+//           .input('branch_id', sql.VarChar, detail.branch_id)
+//           .input('s_no', sql.Int, detail.s_no)
+//           .input('product_code', sql.VarChar, detail.product_code) // Add product_code if available
+//           .input('product_name', sql.VarChar, detail.product_name)
+//           .input('rate', sql.Decimal, detail.rate)
+//           .input('discount', sql.Decimal, detail.discount)
+//           .input('qty', sql.Decimal, detail.qty)
+//           .input('case_qty', sql.Decimal, detail.case_qty)
+//           .input('remarks', sql.VarChar, detail.remarks)
+//           .input('tax_amount', sql.Decimal, detail.tax_amount)
+//           .input('tax_ACC', sql.Decimal, detail.tax_ACC)
+//           .input('i_retail', sql.Decimal, detail.i_retail)
+//           .input('i_cost', sql.Decimal, detail.i_cost)
+//           .input('imei_no', sql.VarChar, detail.imei_no)
+//           .input('uom', sql.VarChar, detail.uom)
+//           .input('Qt_no', sql.Decimal, detail.Qt_no)
+//           .input('Qt_branch', sql.VarChar, detail.Qt_branch)
+//           .input('tax_perc', sql.Decimal, detail.tax_perc)
+//           .input('dmg_status', sql.Int, detail.dmg_status)
+//           .input('dmg_set', sql.Decimal, detail.dmg_set)
+//           .input('clear_set', sql.Decimal, detail.clear_set)
+//           .query(`INSERT INTO invoice_detail (inv_code, status, wk_no, branch_id, s_no, product_code, product_name, rate, discount, qty, case_qty, remarks, tax_amount, tax_ACC, i_retail, i_cost, imei_no, uom, Qt_no, Qt_branch, tax_perc, dmg_status, dmg_set, clear_set) VALUES (@inv_code, @status, @wk_no, @branch_id, @s_no, @product_code, @product_name, @rate, @discount, @qty, @case_qty, @remarks, @tax_amount, @tax_ACC, @i_retail, @i_cost, @imei_no, @uom, @Qt_no, @Qt_branch, @tax_perc, @dmg_status, @dmg_set, @clear_set)`);
+//       });
   
-      await Promise.all(requests); // Wait for all insertions to complete
-      await transaction.commit(); // Commit the transaction
-      res.status(200).json({ message: 'Invoice details saved successfully' });
-    } catch (err) {
-      await transaction.rollback(); // Rollback the transaction in case of an error
-      console.error('Error saving invoice details:', err);
-      res.status(500).json({ error: 'Error saving invoice details' });
-    }
-  });
+//       await Promise.all(requests); // Wait for all insertions to complete
+//       await transaction.commit(); // Commit the transaction
+//       res.status(200).json({ message: 'Invoice details saved successfully' });
+//     } catch (err) {
+//       await transaction.rollback(); // Rollback the transaction in case of an error
+//       console.error('Error saving invoice details:', err);
+//       res.status(500).json({ error: 'Error saving invoice details' });
+//     }
+//   });
   
   // Start the server
   app.listen(3001, () => {
@@ -169,37 +260,37 @@ app.post('/invoice/save', async (req, res) => {
   console.error('SQL Connection Error: ', err);
 });
 // API to save invoice details
-app.post('/invoice/save', async (req, res) => {
-  console.log('Request Body:', req.body); // Log the incoming request body
-  const { items, salesman, customer, invoiceNumber, invoiceDate } = req.body;
+// app.post('/invoice/save', async (req, res) => {
+//   console.log('Request Body:', req.body); // Log the incoming request body
+//   const { items, salesman, customer, invoiceNumber, invoiceDate } = req.body;
 
-  // Check if any value is undefined
-  if (!items || !salesman || !customer || !invoiceNumber || !invoiceDate) {
-    return res.status(400).json({ message: 'All fields are required' });
-  }
+//   // Check if any value is undefined
+//   if (!items || !salesman || !customer || !invoiceNumber || !invoiceDate) {
+//     return res.status(400).json({ message: 'All fields are required' });
+//   }
 
-  try {
-    const requests = items.map((item) => {
-      return pool.request()
-        .input('itemName', sql.VarChar, item.itemName)
-        .input('qty', sql.Int, item.qty)
-        .input('bonus', sql.Int, item.bonus)
-        .input('rate', sql.Float, item.rate)
-        .input('discount', sql.Float, item.discount)
-        .input('total', sql.Float, item.total)
-        .input('salesman', sql.VarChar, salesman)
-        .input('customer', sql.VarChar, customer)
-        .input('invoiceNumber', sql.VarChar, invoiceNumber)
-        .input('invoiceDate', sql.Date, invoiceDate)
-        .query(`INSERT INTO invoice_items (item_name, qty, bonus, rate, discount, total, salesman, customer, invoice_number, invoice_date) 
-                 VALUES (@itemName, @qty, @bonus, @rate, @discount, @total, @salesman, @customer, @invoiceNumber, @invoiceDate)`);
-    });
+//   try {
+//     const requests = items.map((item) => {
+//       return pool.request()
+//         .input('itemName', sql.VarChar, item.itemName)
+//         .input('qty', sql.Int, item.qty)
+//         .input('bonus', sql.Int, item.bonus)
+//         .input('rate', sql.Float, item.rate)
+//         .input('discount', sql.Float, item.discount)
+//         .input('total', sql.Float, item.total)
+//         .input('salesman', sql.VarChar, salesman)
+//         .input('customer', sql.VarChar, customer)
+//         .input('invoiceNumber', sql.VarChar, invoiceNumber)
+//         .input('invoiceDate', sql.Date, invoiceDate)
+//         .query(`INSERT INTO invoice_items (item_name, qty, bonus, rate, discount, total, salesman, customer, invoice_number, invoice_date) 
+//                  VALUES (@itemName, @qty, @bonus, @rate, @discount, @total, @salesman, @customer, @invoiceNumber, @invoiceDate)`);
+//     });
 
-    await Promise.all(requests);
+//     await Promise.all(requests);
 
-    res.json({ message: 'Invoice saved successfully!' });
-  } catch (err) {
-    console.error('Error saving invoice: ', err);
-    res.status(500).json({ message: 'Error saving invoice' });
-  }
-});
+//     res.json({ message: 'Invoice saved successfully!' });
+//   } catch (err) {
+//     console.error('Error saving invoice: ', err);
+//     res.status(500).json({ message: 'Error saving invoice' });
+//   }
+// });
