@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import './App.css';
 import { Navbar, Nav, NavDropdown, Container } from 'react-bootstrap';
 import { Link } from 'react-router-dom'; // Import Link
@@ -6,6 +6,14 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
 const MyNavbar = () => {
+  useEffect(()=>{
+    fetch('http://localhost:3001/set', {
+      credentials: 'include' // Ensures cookies are included in the request
+  })
+      .then(response => response.text())
+      .then(data => console.log(data)) // Display response in frontend console
+      .catch(error => console.error('Error:', error));
+  })
   return (
     <Navbar expand="md" variant="dark" className="px-3 last">
       <Container fluid>

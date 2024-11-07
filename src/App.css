@@ -11,7 +11,7 @@
   background-position: center; */
   /* background-attachment: fixed; */
   height: 100vh;
-  overflow-y: hidden;
+  /* overflow-y: hidden; */
 }
 
 .card {
@@ -74,6 +74,7 @@ background-color: transparent !important;}
 }
 .ap_wrap{
   width: 100%;
+  /* position: relative; */
 }
 
 .btn-primary:hover {
@@ -82,6 +83,8 @@ background-color: transparent !important;}
 }
 .last{
   background: #98198e!important;
+   position: fixed; 
+ 
 }
 /* .bg{
   background-color: 
@@ -91,23 +94,70 @@ background-color: transparent !important;}
 .size{
   width: 75%;
 }
-/* .table thead.custom-header {
-  background-color: grey !important;
-} */
- /* table{
-  background: transparent;
- } */
-/* .dark-blue{
+.dark-blue{
   background-color:#00008b !important;
-} */
+} 
 @media screen and (max-width: 768px){
   .ap_container{
       width: 100%;
   }
   .ap_wrap{
       width: 100%;
-  }}
+  }
+  .card{
+    width: 95% !important;
+  }
+}
+/* Hamburger icon styling */
+.hamburger-icon {
+  display: none;
+  cursor: pointer;
+}
+.hamburger-icon .line {
+  width: 25px;
+  height: 3px;
+  background-color: white;
+  margin: 4px 0;
+}
+
+/* Media query for 768px and below */
 @media (max-width: 768px) {
+   .inv-layout{
+    max-width: 630px !important;
+  } 
+  /* .ap_wrap .container-fluid{
+    margin-right: 0%!important;
+    right: 0%;
+    
+  } */
+  .hamburger-icon {
+    display: block;
+  }
+
+  /* Hide menu buttons by default */
+  .menu-buttons {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    background-color: #F5F8F9; 
+    padding: 10px;
+    border-radius: 5px;
+    position: absolute;
+     top: 50px;
+     left: 0%;
+    /* left: 3px;  */
+    z-index: 1000; /* Ensure menu appears above other content */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional shadow for better visibility */
+  }
+
+  /* Show menu buttons when the hamburger menu is open */
+  .menu-buttons.show {
+    display: flex;
+  }
+}
+
+@media (max-width: 768px) {
+  
   .res{
     display: flex!important;
     flex-direction: column-reverse;
@@ -115,6 +165,13 @@ background-color: transparent !important;}
   }
   .left,.right{
 width: 100% !important;
+  }
+  .box{
+    width: 100% !important;
+  }
+  .endSection{
+   flex-wrap: wrap;
+   flex-direction: column-reverse;
   }
   /* video{
     object-fit: contain;
@@ -186,13 +243,19 @@ width: 100% !important;
     transform: rotate(360deg);
   }
 }
+.container-fluid{
+  padding: 0% !important;
+}
 .bg-l{
-  background: url("/public/assets/bk -inv.png") center center / cover no-repeat fixed !important;
-  background-attachment: fixed;
+  /* background: url("/public/assets/bk -inv.png") center center / cover no-repeat fixed !important;
+  background-attachment: fixed; */
   /* margin: 0%;
   padding: 0%; */
+  background-color: 
   
-  padding: 5% 0;
+  #f5f8f9;
+  position: relative;
+  /* padding: 5% 0; */
   /* overflow: hidden; */
 
 }
@@ -200,13 +263,16 @@ width: 100% !important;
   font-weight: bold !important;
 }
 .inv-layout {
-  background: #e8e3e9;
-  width: 65% !important;
+  /* background: #e8e3e9; */
+  position: absolute;
+  background-color: 
+  #f5f8f9;
+  width: 100% !important;
   padding: 3% !important;
   position: relative;
   box-shadow: 0 4px 8px rgba(133, 6, 138, 0.2);
 }
-
+/* 
 .inv-layout::before {
   content: "";
   background: url('/public/assets/1.png') no-repeat;
@@ -214,8 +280,8 @@ width: 100% !important;
   top: 0;
   right: 0;
   z-index: 1;
-  width: 30%; /* adjust size as needed */
-  height: 30%; /* adjust size as needed */
+  width: 30%;
+  height: 30%;
   
 }
 
@@ -225,12 +291,12 @@ width: 100% !important;
   position: absolute;
   bottom: 0;
   left: 0;
-  width: 30%; /* adjust size as needed */
-  height: 30%; /* adjust size as needed */
+  width: 30%;
+  height: 30%; 
 
-}
+} */
 .txt-dec{
 color: #98198e;
 font-weight: bold;
-font-size: larger;
+font-size:medium;
 }

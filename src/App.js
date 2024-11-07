@@ -8,6 +8,7 @@ function App() {
     return (
         <Router>
             <Routes>
+            <Route path="/" element={<LoginForm />} />
                 <Route path="/login" element={<LoginForm />} />
                 <Route path="/home" element={<MyNavBar />} /> {/* Redirect to MyNavBar on successful login */}
                 <Route path="/invoice" element={<InvoiceForm />} />
