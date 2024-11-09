@@ -24,6 +24,8 @@ function InvoiceForm() {
   const [cashAmount, setCashAmount] = useState(Number(localStorage.getItem('cashAmount')) || 0);
   const [bankAmount, setBankAmount] = useState(localStorage.getItem('bankAmount') || 0);
   const [netTotal, setNetTotal] = useState(Number(localStorage.getItem('netTotal')) || 0);
+  const [cashReceive, setCashReceive] = useState(localStorage.getItem('cashReceive') || 0);
+  const [cashRemaining, setCashRemaining] = useState(localStorage.getItem('cashRemaining') || 0);
   const [customerCode, setCustomerCode] = useState(Number(localStorage.getItem('customerCode')) || 0);
   const [salesmanCode, setSalesmanCode] = useState(Number(localStorage.getItem('salesmanCode')) || 0);
   const selectedEmployee = Cookies.get('selectedEmployee');
@@ -61,7 +63,10 @@ function InvoiceForm() {
     localStorage.setItem('netTotal', netTotal);
     localStorage.setItem('customerCode', customerCode);
     localStorage.setItem('salesmanCode', salesmanCode);
-  }, [currentDate, searchItem, searchCustomer, customerTerms, items, totals, salesman, customer, invoiceNumber, currentBalance, cashAmount, bankAmount, netTotal,customerCode, salesmanCode]);
+    localStorage.setItem('cashReceive', cashReceive);
+    localStorage.setItem('cashRemaining', cashRemaining);
+
+  }, [currentDate, searchItem, searchCustomer, customerTerms, items, totals, salesman, customer, invoiceNumber, currentBalance, cashAmount, bankAmount, netTotal,customerCode, salesmanCode,cashReceive,cashRemaining]);
   const filteredOptions = salesmenOptions.filter(option =>
     option.emp_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -222,6 +227,8 @@ useEffect(() => {
       setBank('');
       setBankOptions([]);
       setError('');
+      setCashReceive(0);
+      setCashRemaining(0);
       //setCurrentDateTime(''); 
         } else {
           alert('Failed to save invoice: ' + data.message);
@@ -289,7 +296,7 @@ useEffect(() => {
 
     <div className="container-fluid bg-l " 
     >
-     <div className="container-fluid p-3 last">
+     <div className="container-fluid p-3 last top-navbar fixed-top">
       {/* Hamburger icon for mobile */}
       <div className="d-md-none hamburger-icon" onClick={toggleMenu}>
         <div className="line"></div>
@@ -670,22 +677,29 @@ useEffect(() => {
       <div className="col d-flex gap-4 align-items-center">
         <label className="fw-bold text-wrap txt-dec" style={{ whiteSpace: "normal" }}>Cash Received</label>
         <input
-          type="text"
+          type="number"
+          step='2'
           className="form-control"
           placeholder="0"
-          // value={bankAmount}
-          // onChange={(e) => handleInputChange(e, 'bank')}
+          value={cashReceive}
+          onChange={(e) => {
+            const newCashReceive = parseFloat(e.target.value) || 0;
+            setCashReceive(newCashReceive);
+            setCashRemaining(netTotal - newCashReceive);
+          }}
         />
       </div>
 
       <div className="col d-flex gap-4 align-items-center">
         <label className="fw-bold txt-dec">Cash Remaining</label>
         <input
-          type="number"
+      
+    type="number"
+    step='2'
           className="form-control"
           placeholder='0'
-          // value={cashAmount}
-          // onChange={(e) => handleInputChange(e, 'cash')}
+           value={cashRemaining}
+           readOnly
         />
       </div>
     </div>

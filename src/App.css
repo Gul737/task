@@ -104,6 +104,7 @@ background-color: transparent !important;}
   .ap_wrap{
       width: 100%;
   }
+
   .card{
     width: 95% !important;
   }
@@ -124,6 +125,8 @@ background-color: transparent !important;}
 @media (max-width: 768px) {
    .inv-layout{
     max-width: 630px !important;
+  margin-top: 70px !important;
+  
   } 
   /* .ap_wrap .container-fluid{
     margin-right: 0%!important;
@@ -259,17 +262,27 @@ width: 100% !important;
   /* overflow: hidden; */
 
 }
+.fixed-top {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1000; /* Ensures it's above other content */
+  background-color: #f8f9fa; /* Adjust color as needed */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Optional shadow */
+}
+
 .bold{
   font-weight: bold !important;
 }
 .inv-layout {
   /* background: #e8e3e9; */
-  position: absolute;
+  /* position: absolute; */
   background-color: 
   #f5f8f9;
+  margin-top: 5%;
   width: 100% !important;
   padding: 3% !important;
-  position: relative;
+  /* position: relative; */
   box-shadow: 0 4px 8px rgba(133, 6, 138, 0.2);
 }
 /* 
