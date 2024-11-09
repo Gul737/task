@@ -3,10 +3,13 @@ import './App.css';
 import Cookies from 'js-cookie';
 function InvoiceForm() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const toggleMenu = () => {
     console.log("Menu toggle clicked");
     setMenuOpen(!menuOpen);
   };
+  
+
   const [currentDate, setCurrentDate] = useState(localStorage.getItem('currentDate') || '');
   const [itemDescriptions, setItemDescriptions] = useState([]);
   const [searchItem, setSearchItem] = useState(localStorage.getItem('searchItem') || '');
@@ -28,6 +31,13 @@ function InvoiceForm() {
   const [cashRemaining, setCashRemaining] = useState(localStorage.getItem('cashRemaining') || 0);
   const [customerCode, setCustomerCode] = useState(Number(localStorage.getItem('customerCode')) || 0);
   const [salesmanCode, setSalesmanCode] = useState(Number(localStorage.getItem('salesmanCode')) || 0);
+  const [newItem, setNewItem] = useState(() => {
+    const savedItem = localStorage.getItem('newItem');
+    return savedItem
+      ? JSON.parse(savedItem)
+      : { itemName: '', qty: 0, rate: 0, discount: 0, cost: 0, retail: 0 };
+  });
+  //const [newItem, setNewItem] = useState((localStorage.getItem('newItem')||{ itemName: '', qty: 0, rate: 0, discount: 0 ,cost:0,retail:0}));
   const selectedEmployee = Cookies.get('selectedEmployee');
   const [currentDateTime, setCurrentDateTime] = useState(''); 
   
@@ -41,7 +51,13 @@ function InvoiceForm() {
     const time = now.toTimeString().slice(0, 8); 
     setCurrentDateTime(`${currentDate} ${time}`);
   }, [currentDate]);
-  const [newItem, setNewItem] = useState({ itemName: '', qty: 0, rate: 0, discount: 0 ,cost:0,retail:0});
+  useEffect(() => {
+    // if (netTotal > 0) {
+      setCashRemaining(netTotal - cashReceive);
+    // }
+  }, [netTotal, cashReceive]);
+  
+
    const [searchTerm, setSearchTerm] = useState('');
   const [itemNames, setItemNames] = useState([]);
   const [bank, setBank] = useState('');
@@ -65,35 +81,64 @@ function InvoiceForm() {
     localStorage.setItem('salesmanCode', salesmanCode);
     localStorage.setItem('cashReceive', cashReceive);
     localStorage.setItem('cashRemaining', cashRemaining);
+    localStorage.setItem('newItem', JSON.stringify(newItem));
 
-  }, [currentDate, searchItem, searchCustomer, customerTerms, items, totals, salesman, customer, invoiceNumber, currentBalance, cashAmount, bankAmount, netTotal,customerCode, salesmanCode,cashReceive,cashRemaining]);
+  }, [currentDate, searchItem, searchCustomer, customerTerms, items, totals, salesman, customer, invoiceNumber, currentBalance, cashAmount, bankAmount, netTotal,customerCode, salesmanCode,cashReceive,cashRemaining,newItem]);
+  
   const filteredOptions = salesmenOptions.filter(option =>
     option.emp_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
    
-
- const handleSalesmanSelect = (selectedSalesman) => {
-  setSalesman(selectedSalesman.emp_name);
+  const handleSalesmanSelect = (selectedSalesman) => {
+    setSalesman(selectedSalesman.emp_name);
+    setSearchTerm('');
+    setSelectedIndex(-1); // Reset index after selection
+  };
+//  const handleSalesmanSelect = (selectedSalesman) => {
+//   setSalesman(selectedSalesman.emp_name);
   
-  setSearchTerm(''); 
-  setSalesmanCode(selectedSalesman.emp_code);
-};
+//   setSearchTerm(''); 
+//   setSalesmanCode(selectedSalesman.emp_code);
+// };
 const filteredCustomerOptions = customersOptions.filter(option =>
   option.cust_name.toLowerCase().includes(searchCustomer.toLowerCase())
 );
-
+// const handleCustomerSelect = (selectedCustomer) => {
+//   setCustomer(selectedCustomer.cust_name);
+//   setSearchCustomer('');
+//   setSelectedIndex(-1); // Reset index after selection
+ 
+// };
 const handleCustomerSelect = (selectedCustomer) => {
   setCustomer(selectedCustomer.cust_name);
   setSearchCustomer('');
   handleCustomerChange({ target: { value: selectedCustomer.cust_code } });
-  setSearchTerm(''); 
+   setSelectedIndex(-1);
+ // setSearchTerm(''); 
   setCustomerCode(selectedCustomer.cust_code);
 };
 const filteredItemOptions = itemDescriptions.filter(option =>
   option.product_desc.toLowerCase().includes(searchItem.toLowerCase())
 );
 
+// const handleItemSelect = (selectedItem) => {
+//   setSearchItem(selectedItem.product_desc);
+//   setSelectedIndex(-1); // Reset index after selection
+// };
+
+const handleKeyDown = (e, options, handleSelect) => {
+  if (e.key === 'ArrowDown') {
+    setSelectedIndex((prevIndex) => (prevIndex + 1) % options.length);
+  } else if (e.key === 'ArrowUp') {
+    setSelectedIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : options.length - 1));
+  } else if (e.key === 'Enter' && selectedIndex >= 0) {
+    handleSelect(options[selectedIndex]);
+  } else if (e.key === 'Backspace' && !e.target.value) {
+    
+    setSelectedIndex(-1); // Reset index on backspace
+  }
+};
 // Handle item selection from dropdown
 const handleItemSelect = (selectedItem) => {
   setNewItem({
@@ -104,8 +149,13 @@ const handleItemSelect = (selectedItem) => {
     cost: selectedItem.cost,
     retail: selectedItem.retail,
   });
+   setSearchTerm('');
+  //  setSearchItem(selectedItem.product_desc);
+   setSearchItem('');
+  setSelectedIndex(-1); // Reset index after selection
   //setItems(selectedItem.product_desc);
-  setSearchItem(''); // Clear search term after selecting
+  //setSearchItem(''); // Clear search term after selecting
+   
 };
 useEffect(() => {
   console.log('Salesman Code:', salesmanCode); // This will log whenever salesmanCode changes
@@ -122,7 +172,8 @@ useEffect(() => {
     } else {
       setError('');
     }
-  }, [totals, cashAmount, bankAmount]);
+  // }, [totals, cashAmount, bankAmount]);
+}, [ cashAmount, bankAmount]);
   useEffect(() => {
   
     fetch('http://localhost:3001/invoice', {
@@ -170,19 +221,19 @@ useEffect(() => {
         })
         .catch(error => console.error('Error fetching customer balance:', error));
     };
-    const handleItemChange = (e) => {
-      const selectedItem = itemDescriptions.find(item => item.product_desc === e.target.value);
-      if (selectedItem) {
-        setNewItem({
-          itemName: selectedItem.product_desc,
-          qty: selectedItem.case_qty,
-          rate:0,
-          discount: selectedItem.item_disc,
-          cost: selectedItem.cost,
-          retail: selectedItem.retail
-        });
-      }
-    };
+    // const handleItemChange = (e) => {
+    //   const selectedItem = itemDescriptions.find(item => item.product_desc === e.target.value);
+    //   if (selectedItem) {
+    //     setNewItem({
+    //       itemName: selectedItem.product_desc,
+    //       qty: selectedItem.case_qty,
+    //       rate:0,
+    //       discount: selectedItem.item_disc,
+    //       cost: selectedItem.cost,
+    //       retail: selectedItem.retail
+    //     });
+    //   }
+    // };
     const handleInputChange = (e, type) => {
       const value = parseFloat(e.target.value) || 0;
     
@@ -355,16 +406,36 @@ useEffect(() => {
               className="form-control"
               placeholder="Search Salesman"
               value={searchTerm || salesman}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              // onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, filteredOptions, handleSalesmanSelect)}
+              onChange={(e) => {
+    setSearchTerm(e.target.value);
+    if (e.target.value === '') {
+      setSalesman(''); // Reset the field to placeholder if empty
+    }
+  }}
             />
 
             {/* Dropdown for search results */}
-            {searchTerm && (
+            {/* {searchTerm && (
               <div className="dropdown-menu w-100" style={{ maxHeight: '200px', overflowY: 'auto', display: 'block' }}>
                 {filteredOptions.map((option, index) => (
                   <button
                     key={index}
                     className="dropdown-item"
+                    onClick={() => handleSalesmanSelect(option)}
+                  >
+                    {option.emp_name}
+                  </button>
+                ))}
+              </div>
+            )} */}
+               {searchTerm && (
+              <div className="dropdown-menu w-100 show">
+                {filteredOptions.map((option, index) => (
+                  <button
+                    key={index}
+                    className={`dropdown-item ${index === selectedIndex ? 'active' : ''}`}
                     onClick={() => handleSalesmanSelect(option)}
                   >
                     {option.emp_name}
@@ -395,11 +466,22 @@ useEffect(() => {
       className="form-control"
       placeholder="Search Customer"
       value={searchCustomer || customer}
-      onChange={(e) => setSearchCustomer(e.target.value)}
+      // onChange={(e) => setSearchCustomer(e.target.value)}
+      onKeyDown={(e) => handleKeyDown(e, filteredCustomerOptions, handleCustomerSelect)}
+      onChange={(e) => {
+    setSearchCustomer(e.target.value);
+    if (e.target.value === '') {
+      setCustomer(''); // Reset the field to placeholder if empty
+setCurrentBalance(0);
+setCustomerCode(''
+);
+setCustomerTerms('');
+    }
+  }}
     />
 
     {/* Dropdown for search results */}
-    {searchCustomer && (
+    {/* {searchCustomer && (
       <div className="dropdown-menu w-100" style={{ maxHeight: '200px', overflowY: 'auto', display: 'block' }}>
         {filteredCustomerOptions.map((option, index) => (
           <button
@@ -408,11 +490,24 @@ useEffect(() => {
             onClick={() => handleCustomerSelect(option)}
           >
             {option.cust_name} 
-            {/* ({option.cust_code}) */}
+            
           </button>
         ))}
       </div>
-    )}
+    )} */}
+    {searchCustomer && (
+              <div className="dropdown-menu w-100 show">
+                {filteredCustomerOptions.map((option, index) => (
+                  <button
+                    key={index}
+                    className={`dropdown-item ${index === selectedIndex ? 'active' : ''}`}
+                    onClick={() => handleCustomerSelect(option)}
+                  >
+                    {option.cust_name}
+                  </button>
+                ))}
+              </div>
+            )}
   </div>
 </div>
     <div className="col-md-5 d-flex gap-2 align-items-center">
@@ -463,11 +558,25 @@ useEffect(() => {
       className="form-control"
       placeholder="Search Item"
       value={searchItem || newItem.itemName}
-      onChange={(e) => setSearchItem(e.target.value)}
+      // onChange={(e) => setSearchItem(e.target.value)}
+      onKeyDown={(e) => handleKeyDown(e, filteredItemOptions, handleItemSelect)}
+      onChange={(e) => {
+    setSearchItem(e.target.value);
+    if (e.target.value === '') {
+         setNewItem({
+    itemName: '',
+    qty: 0,
+    rate: 0,
+    discount: 0,
+    cost: 0,
+    retail: 0,
+  });
+    }
+  }}
     />
 
     {/* Dropdown for filtered item options */}
-    {searchItem && (
+    {/* {searchItem && (
       <div
         className="dropdown-menu w-100"
         style={{
@@ -486,7 +595,24 @@ useEffect(() => {
           </button>
         ))}
       </div>
-    )}
+    )} */}
+        {searchItem && (
+              <div className="dropdown-menu w-100 show" style={{
+          maxHeight: '200px',
+          overflowY: 'auto',
+          display: 'block',
+        }}>
+                {filteredItemOptions.map((option, index) => (
+                  <button
+                    key={index}
+                    className={`dropdown-item ${index === selectedIndex ? 'active' : ''}`}
+                    onClick={() => handleItemSelect(option)}
+                  >
+                    {option.product_desc}
+                  </button>
+                ))}
+              </div>
+            )}
   </div>
 </td>
       <td style={{ padding: '10px' }}>
