@@ -1,45 +1,267 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import Cookies from 'js-cookie';
+import Select from 'react-select';
 function InvoiceForm() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
   const toggleMenu = () => {
     console.log("Menu toggle clicked");
     setMenuOpen(!menuOpen);
   };
+  const [selectedCustomer, setSelectedCustomer] = useState(() => {
+    const savedCustomer = localStorage.getItem('selectedCustomer');
+    return savedCustomer ? JSON.parse(savedCustomer) : null;
+  });
+  const fetchPreviousInvoice = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/get-previous-invoice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ inv_no: invoiceNumber }),
+      });
   
+      if (!response.ok) {
+        throw new Error('Failed to fetch previous invoice');
+      }
+  
+      const data = await response.json();
+  
+      // Log the complete response to check its structure
+      console.log("Complete response data:", data);
+  
+      if (data.success) {
+        let previousInvoice = data.invoice;
+  
+        // Check if previousInvoice is an array of products or a single object
+        if (!Array.isArray(previousInvoice) && previousInvoice.products) {
+          // If products are nested, use them
+          previousInvoice = previousInvoice.products;
+        } else if (!Array.isArray(previousInvoice)) {
+          // If previousInvoice is not an array and products aren't nested, wrap it in an array
+          previousInvoice = [previousInvoice];
+        }
+  
+        // Log previousInvoice after the transformation
+        console.log("Processed previousInvoice data:", previousInvoice);
+  
+        // Map each product item to fit your `newItem` structure
+        const fetchedProducts = previousInvoice.map(item => ({
+          product_name: item.product_name,
+          product_code: item.product_code,
+          qty: item.qty,
+          rate: item.rate,
+          discount: item.discount,
+          i_cost: item.i_cost,
+          i_retail: item.i_retail,
+          total:(item.rate - item.discount) * item.qty,
+        }));
+        setItems(fetchedProducts);
+          console.log("Fetched products:", fetchedProducts);
 
+        setInvoiceNumber(previousInvoice[0].inv_no);
+        setTotals({
+          subTotal: previousInvoice[0].g_amount,
+          discountTotal: previousInvoice[0].g_discount,
+          freightTotal: previousInvoice[0].freight_amount,
+          expenseTotal: previousInvoice[0].exp_amount,
+        });
+        setSelectedCustomer(previousInvoice[0].cust_name);
+        setSearchCustomer(previousInvoice[0].cust_name);
+        setCustomer(previousInvoice[0]);
+        setCurrentBalance(previousInvoice[0].prv_balance);
+  
+        const dateFromDatabase = new Date(previousInvoice[0].inv_date);
+        const formattedDate = dateFromDatabase.toISOString().slice(0, 10);
+        setCurrentDate(formattedDate);
+        setCurrentDateTime(previousInvoice[0].inv_datetime);
+        setBankAmount(previousInvoice[0].bank_amount);
+      }
+    } catch (error) {
+      console.error('Error fetching previous invoice:', error);
+    }
+  };
+  const fetchForwardInvoice = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/get-next-invoice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ inv_no: invoiceNumber }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to fetch next invoice');
+      }
+  
+      const data = await response.json();
+  
+      // Log the complete response to check its structure
+      console.log("Complete response data:", data);
+  
+      if (data.success) {
+        let nextInvoice = data.invoice;
+  
+        // Check if nextInvoice is an array of products or a single object
+        if (!Array.isArray(nextInvoice) && nextInvoice.products) {
+          // If products are nested, use them
+          nextInvoice = nextInvoice.products;
+        } else if (!Array.isArray(nextInvoice)) {
+          // If nextInvoice is not an array and products aren't nested, wrap it in an array
+          nextInvoice = [nextInvoice];
+        }
+  
+        // Log nextInvoice after the transformation
+        console.log("Processed nextInvoice data:", nextInvoice);
+  
+        // Map each product item to fit your `newItem` structure
+        const fetchedProducts = nextInvoice.map(item => ({
+          product_name: item.product_name,
+          product_code: item.product_code,
+          qty: item.qty,
+          rate: item.rate,
+          discount: item.discount,
+          i_cost: item.i_cost,
+          i_retail: item.i_retail,
+          total: (item.rate - item.discount) * item.qty,
+        }));
+        setItems(fetchedProducts);
+        console.log("Fetched products:", fetchedProducts);
+  
+        setInvoiceNumber(nextInvoice[0].inv_no);
+        setTotals({
+          subTotal: nextInvoice[0].g_amount,
+          discountTotal: nextInvoice[0].g_discount,
+          freightTotal: nextInvoice[0].freight_amount,
+          expenseTotal: nextInvoice[0].exp_amount,
+        });
+        setSelectedCustomer(nextInvoice[0].cust_name);
+        setSearchCustomer(nextInvoice[0].cust_name);
+        setCustomer(nextInvoice[0]);
+        setCurrentBalance(nextInvoice[0].prv_balance);
+  
+        const dateFromDatabase = new Date(nextInvoice[0].inv_date);
+        const formattedDate = dateFromDatabase.toISOString().slice(0, 10);
+        setCurrentDate(formattedDate);
+        setCurrentDateTime(nextInvoice[0].inv_datetime);
+        setBankAmount(nextInvoice[0].bank_amount);
+      }
+    } catch (error) {
+      console.error('Error fetching next invoice:', error);
+    }
+  };
+  
+  const [fixQty,setFixQty]=useState(0);
+  const [isDisabled, setIsDisabled] = useState(false);
+  // const [selectedCustomer, setSelectedCustomer] = useState(localStorage.getItem('selectedCustomer'));
   const [currentDate, setCurrentDate] = useState(localStorage.getItem('currentDate') || '');
   const [itemDescriptions, setItemDescriptions] = useState([]);
   const [searchItem, setSearchItem] = useState(localStorage.getItem('searchItem') || '');
   const [searchCustomer, setSearchCustomer] = useState(localStorage.getItem('searchCustomer') || '');
-  const [termsOptions, setTermsOptions] = useState([]);
-  const [customerTerms, setCustomerTerms] = useState(localStorage.getItem('customerTerms') || '');
+  const [customerTerms, setCustomerTerms] = useState(localStorage.getItem('customerTerms') || " ");
   const [items, setItems] = useState(JSON.parse(localStorage.getItem('items')) || []);
-  const [totals, setTotals] = useState(JSON.parse(localStorage.getItem('totals')) || { subTotal: 0, discountTotal: 0, freightTotal: 0, expenseTotal: 0 });
+  
+  const [totals, setTotals] = useState(JSON.parse(localStorage.getItem('totals')) || { subTotal: 0, discountTotal: '', freightTotal: 0, expenseTotal: 0 });
   const [salesman, setSalesman] = useState(localStorage.getItem('salesman') || '');
   const [customer, setCustomer] = useState(localStorage.getItem('customer') || '');
   const [invoiceNumber, setInvoiceNumber] = useState(Number(localStorage.getItem('invoiceNumber')) || 0);
   const [salesmenOptions, setSalesmenOptions] = useState([]);
   const [customersOptions, setCustomersOptions] = useState([]);
   const [currentBalance, setCurrentBalance] = useState(localStorage.getItem('currentBalance') || 0);
-  const [cashAmount, setCashAmount] = useState(Number(localStorage.getItem('cashAmount')) || 0);
-  const [bankAmount, setBankAmount] = useState(localStorage.getItem('bankAmount') || 0);
+   const [cashAmount, setCashAmount] = useState(localStorage.getItem('cashAmount')||'');
+   const [bankAmount, setBankAmount] = useState(localStorage.getItem('bankAmount')||'');
   const [netTotal, setNetTotal] = useState(Number(localStorage.getItem('netTotal')) || 0);
-  const [cashReceive, setCashReceive] = useState(localStorage.getItem('cashReceive') || 0);
-  const [cashRemaining, setCashRemaining] = useState(localStorage.getItem('cashRemaining') || 0);
+  const [cashReceive, setCashReceive] = useState(localStorage.getItem('cashReceive') || '');
+  const [cashReceivetotal, setCashReceivetotal] = useState(localStorage.getItem('cashReceive') || 0);
+  const [cashRemaining, setCashRemaining] = useState(localStorage.getItem('cashRemaining') || '');
   const [customerCode, setCustomerCode] = useState(Number(localStorage.getItem('customerCode')) || 0);
   const [salesmanCode, setSalesmanCode] = useState(Number(localStorage.getItem('salesmanCode')) || 0);
+  const [selectedSalesman, setSelectedSalesman] = useState(() => {
+    const savedSalesman = localStorage.getItem('salesman'); // Retrieve salesman from localStorage
+    return savedSalesman ? { label: savedSalesman, value: null } : null; // Set the salesman name if found
+});
+
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [currentDateTime, setCurrentDateTime] = useState(''); 
+  const itemRefs = useRef([]);
+  const [searchTerm, setSearchTerm] = useState('');
+ const [itemNames, setItemNames] = useState([]);
+ const [bank, setBank] = useState();
+ //const [bankOptions, setBankOptions] = useState([]);
+ const [error, setError] = useState(''); 
+ const [selectedBank, setSelectedBank] = useState('');
+ 
+ const bankOptions = [
+  { value: '', label: 'Select Bank' },
+  { value: 'MCB', label: 'MCB' },
+  { value: 'HBL', label: 'HBL' },
+  { value: 'UBL', label: 'UBL' }
+];
+  const optionsitem = itemDescriptions.map((option) => ({
+    value: option.product_code, // assuming `item_code` is the unique identifier
+    label: option.product_desc,
+    fixq:option.case_qty,
+    details: {
+      product_code:option.product_code,
+      qty: option.case_qty,
+      rate: option.cost,
+      discount: option.item_disc,
+      i_cost: option.cost,
+      i_retail: option.retail,
+    },
+  }));
+
+  const onItemSelectChange = (selectedOption) => {
+    setSelectedItem(selectedOption);
+   
+    if (selectedOption) {
+      setSearchItem(selectedOption.label);
+      setFixQty(selectedOption.fixq);
+      console.log('Qty set to:', selectedOption.qty);
+      setNewItem({
+        product_name: selectedOption.label,
+        ...selectedOption.details,
+      });
+     
+    
+    }  else {
+      setSearchItem('');
+      setNewItem({
+        product_name: '',
+        product_code:'',
+        qty: '',
+        rate: '',
+        discount: '',
+        i_cost: '',
+        i_retail: '',
+      });
+    }
+  };
   const [newItem, setNewItem] = useState(() => {
     const savedItem = localStorage.getItem('newItem');
     return savedItem
       ? JSON.parse(savedItem)
-      : { itemName: '', qty: 0, rate: 0, discount: 0, cost: 0, retail: 0 };
+      : { product_name: '', product_code:'',qty: '', rate: '', discount: '', i_cost: '', i_retail: '' ,total:''};
   });
-  //const [newItem, setNewItem] = useState((localStorage.getItem('newItem')||{ itemName: '', qty: 0, rate: 0, discount: 0 ,cost:0,retail:0}));
-  const selectedEmployee = Cookies.get('selectedEmployee');
-  const [currentDateTime, setCurrentDateTime] = useState(''); 
+  
+  
+    // const handleBankSelectionChange = (selectedOption) => {
+    //   setSelectedBank(selectedOption ? selectedOption.value : '');
+    //   setBank(selectedOption.value);
+    // };
+    const handleBankSelectionChange = (selectedOption) => {
+      if (selectedOption && selectedOption.value) {
+        setSelectedBank(selectedOption.value);
+        setBank(selectedOption.value);
+        console.log(bank)
+      } else {
+        setSelectedBank('');  // Default to empty if no selection
+        setBank('');           // Reset bank if no selection
+      }
+    };
+    
   
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10); 
@@ -51,18 +273,6 @@ function InvoiceForm() {
     const time = now.toTimeString().slice(0, 8); 
     setCurrentDateTime(`${currentDate} ${time}`);
   }, [currentDate]);
-  useEffect(() => {
-    // if (netTotal > 0) {
-      setCashRemaining(netTotal - cashReceive);
-    // }
-  }, [netTotal, cashReceive]);
-  
-
-   const [searchTerm, setSearchTerm] = useState('');
-  const [itemNames, setItemNames] = useState([]);
-  const [bank, setBank] = useState('');
-  const [bankOptions, setBankOptions] = useState([]);
-  const [error, setError] = useState(''); 
   useEffect(() => {
     localStorage.setItem('currentDate', currentDate);
     localStorage.setItem('searchItem', searchItem);
@@ -82,98 +292,148 @@ function InvoiceForm() {
     localStorage.setItem('cashReceive', cashReceive);
     localStorage.setItem('cashRemaining', cashRemaining);
     localStorage.setItem('newItem', JSON.stringify(newItem));
+    localStorage.setItem('selectedCustomer', JSON.stringify(selectedCustomer));
 
-  }, [currentDate, searchItem, searchCustomer, customerTerms, items, totals, salesman, customer, invoiceNumber, currentBalance, cashAmount, bankAmount, netTotal,customerCode, salesmanCode,cashReceive,cashRemaining,newItem]);
+
+  }, [currentDate, searchItem, searchCustomer, customerTerms, items, totals, salesman, customer, invoiceNumber,netTotal, currentBalance, cashAmount, bankAmount, netTotal,customerCode, salesmanCode,cashReceive,cashRemaining,newItem]);
   
-  const filteredOptions = salesmenOptions.filter(option =>
-    option.emp_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // const filteredOptions = salesmenOptions.filter(option =>
+  //   option.emp_name.toLowerCase().includes(searchTerm.toLowerCase())
+  // );
 
-   
-  const handleSalesmanSelect = (selectedSalesman) => {
-    setSalesman(selectedSalesman.emp_name);
-    setSearchTerm('');
-    setSelectedIndex(-1); // Reset index after selection
+  const optionssale = salesmenOptions.map((option) => ({
+    value: option.emp_code, // assuming `emp_code` is the unique identifier
+    label: option.emp_name,
+  }));
+
+  const handleSalesmanChange = (selectedOption) => {
+    setSelectedSalesman(selectedOption);
+    if (selectedOption) {
+      setSearchTerm(selectedOption.label);
+      localStorage.setItem('salesman', selectedOption.label);
+      setSalesmanCode(selectedOption.value); // Save salesman_code
+      setSalesman(selectedOption.label);
+    } else {
+      //setSalesmanCode(''); // Reset the code if no option is selected
+      //localStorage.removeItem('salesman'); // Remove the salesman from localStorage
+      // setSearchTerm('');
+      // setSalesmanCode(''); // Reset the code if no option is selected
+    }
   };
-//  const handleSalesmanSelect = (selectedSalesman) => {
-//   setSalesman(selectedSalesman.emp_name);
-  
-//   setSearchTerm(''); 
-//   setSalesmanCode(selectedSalesman.emp_code);
-// };
-const filteredCustomerOptions = customersOptions.filter(option =>
-  option.cust_name.toLowerCase().includes(searchCustomer.toLowerCase())
-);
-// const handleCustomerSelect = (selectedCustomer) => {
-//   setCustomer(selectedCustomer.cust_name);
-//   setSearchCustomer('');
-//   setSelectedIndex(-1); // Reset index after selection
- 
-// };
-const handleCustomerSelect = (selectedCustomer) => {
-  setCustomer(selectedCustomer.cust_name);
-  setSearchCustomer('');
-  handleCustomerChange({ target: { value: selectedCustomer.cust_code } });
-   setSelectedIndex(-1);
- // setSearchTerm(''); 
-  setCustomerCode(selectedCustomer.cust_code);
-};
-const filteredItemOptions = itemDescriptions.filter(option =>
-  option.product_desc.toLowerCase().includes(searchItem.toLowerCase())
-);
+  const filteredCustomerOptions = customersOptions.filter(option =>
+    option.cust_name.toLowerCase().includes(searchCustomer.toLowerCase())
+  );
+const options = filteredCustomerOptions.map((option) => ({
+  value: option.cust_code,
+  label: option.cust_name,
+  terms: option.cust_terms, // Ensure this exists in the data
+  balance: option.cust_current_bal // Ensure this exists in the data
+}));
+const handleChange = (selectedOption) => {
+  setSelectedCustomer(selectedOption);
+  if (selectedOption) {
+    setCustomerCode(selectedOption.value);
+    setCustomer(selectedOption.label);
+    setSearchCustomer(selectedOption.label);
+    setCustomerTerms(selectedOption.terms);
+    setCurrentBalance(selectedOption.balance);
 
-// const handleItemSelect = (selectedItem) => {
-//   setSearchItem(selectedItem.product_desc);
-//   setSelectedIndex(-1); // Reset index after selection
-// };
-
-const handleKeyDown = (e, options, handleSelect) => {
-  if (e.key === 'ArrowDown') {
-    setSelectedIndex((prevIndex) => (prevIndex + 1) % options.length);
-  } else if (e.key === 'ArrowUp') {
-    setSelectedIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : options.length - 1));
-  } else if (e.key === 'Enter' && selectedIndex >= 0) {
-    handleSelect(options[selectedIndex]);
-  } else if (e.key === 'Backspace' && !e.target.value) {
-    
-    setSelectedIndex(-1); // Reset index on backspace
+    // Additional logic to set current balance, customer code, etc.
+  } else {
+    setSearchCustomer('');
+    setCustomer('');
+    setCurrentBalance(0);
+    setCustomerCode('');
+    setCustomerTerms('');
   }
 };
-// Handle item selection from dropdown
-const handleItemSelect = (selectedItem) => {
-  setNewItem({
-    itemName: selectedItem.product_desc,
-    qty: selectedItem.case_qty,
-    rate: selectedItem.cost,
-    discount: selectedItem.item_disc,
-    cost: selectedItem.cost,
-    retail: selectedItem.retail,
-  });
-   setSearchTerm('');
-  //  setSearchItem(selectedItem.product_desc);
-   setSearchItem('');
-  setSelectedIndex(-1); // Reset index after selection
-  //setItems(selectedItem.product_desc);
-  //setSearchItem(''); // Clear search term after selecting
-   
-};
-useEffect(() => {
-  console.log('Salesman Code:', salesmanCode); // This will log whenever salesmanCode changes
-}, [salesmanCode]);
 
+
+const customStyles = { 
+  option: (base, state) => ({
+    ...base,
+    backgroundColor: state.isFocused || state.isSelected ? '#98198E' : base.backgroundColor, // Set background color when focused or selected
+    color: state.isSelected ? 'white' : 'black', // Text color when selected
+    '&:hover': {
+      backgroundColor: '#98198E', 
+      color: 'white', 
+    },
+  }),
+};
   useEffect(() => {
+    if (totals.discountTotal > totals.subTotal) {
+      //alert('Error: Discount Total cannot be greater than Sub Total.');
+      
+      // Focus on the discount input field to prompt correction
+      const discountInput = document.querySelector('input[placeholder="0"][class="form-control"]');
+      if (discountInput) {
+        discountInput.focus();
+      }
+      setTotals({ ...totals, discountTotal: '' });
+      return; // Stop execution if the condition is met
+    }
+  
     const calculatedFinal = totals.subTotal - totals.discountTotal + totals.freightTotal + totals.expenseTotal;
     setNetTotal(calculatedFinal);
+  if(calculatedFinal<=0){
+    setCashReceive('');
+    setCashRemaining('');
+
+  }
+  // if(cashReceive===""||(cashAmount=="" && bankAmount=="")){
+  //   setCashRemaining("");
+  // }
+  if(cashAmount==="" ||bankAmount===""){
+  const totalAmount = parseFloat(cashAmount ||0 ) + parseFloat(bankAmount ||0);
   
-    // Check if cash and bank amounts match the net total
-    const totalAmount = parseFloat(cashAmount || 0) + parseFloat(bankAmount || 0);
-    if (totalAmount !== calculatedFinal) {
-      setError("Enter Amount doesn't match Net Total!");
-    } else {
-      setError('');
+setCashReceivetotal(totalAmount);
+}
+else if(cashAmount!=="" ||bankAmount!==""){
+  const totalAmount = parseFloat(cashAmount ||0 ) + parseFloat(bankAmount ||0);
+  
+  setCashReceivetotal(totalAmount);
+}
+
+ if( (cashAmount==0) && (bankAmount==0) ){
+  setError('');
+}
+   }, [totals,cashRemaining,cashAmount, bankAmount,customerTerms,netTotal,currentBalance,customer,cashReceive,cashReceivetotal]);
+  useEffect(() => {
+    if (document.getElementById('mycash') && cashAmount == 0 && bankAmount == 0) {
+    let newCashRemaining = 0;
+  //setCashRemaining('');
+    if (customerTerms === "CASH") {
+      // newCashRemaining = parseFloat(cashReceive) - parseFloat(netTotal);
+      newCashRemaining = parseFloat(cashReceive)-parseFloat(netTotal) ;
+    } else if (customerTerms === "CREDIT") {
+      newCashRemaining = parseFloat(netTotal) + parseFloat(currentBalance) - parseFloat(cashReceive);
+      //setCashRemaining(parseFloat(netTotal) + parseFloat(currentBalance) - parseFloat(cashReceive));
     }
-  // }, [totals, cashAmount, bankAmount]);
-}, [ cashAmount, bankAmount]);
+    setCashRemaining(newCashRemaining);
+  }}, [cashReceive,customerTerms, netTotal,currentBalance,customer,cashRemaining]);
+  useEffect(() => {
+    if ((cashReceivetotal != netTotal) && (customerTerms === 'CREDIT')) {   
+      const count = parseFloat(currentBalance) + parseFloat(netTotal) - parseFloat(bankAmount) - parseFloat(cashAmount);
+    setCashRemaining(count)
+  } else if((cashReceivetotal != netTotal) && (customerTerms === 'CASH')){
+   setError("Enter Amount doesn't match Net Total!");
+ setCashRemaining(parseFloat(netTotal)-parseFloat(cashReceivetotal));
+ console.log(parseFloat(cashReceivetotal)-parseFloat(netTotal));
+  }
+   else if((cashReceivetotal == netTotal) && (customerTerms === 'CASH'))  {
+    setError('');
+    setCashRemaining(parseFloat(netTotal)-parseFloat(cashReceivetotal));
+    console.log(parseFloat(cashReceivetotal)-parseFloat(netTotal));
+  
+  
+  }
+  
+}, [cashReceivetotal,customer,customerTerms]);
+  const handleCashReceiveChange = (e) => {
+    const newCashReceive = parseFloat(e.target.value) || 0;
+    setCashReceive(newCashReceive);
+  };
+ 
   useEffect(() => {
   
     fetch('http://localhost:3001/invoice', {
@@ -202,38 +462,14 @@ useEffect(() => {
     fetch('http://localhost:3001/salesmen')
       .then(response => response.json())
       .then(data => setSalesmenOptions(data));
-      fetch('http://localhost:3001/bank')
-      .then(response => response.json())
-      .then(data => setBankOptions(data));
+      // fetch('http://localhost:3001/bank')
+      // .then(response => response.json())
+      // .then(data => setBankOptions(data));
       fetch('http://localhost:3001/customers')
       .then(response => response.json())
       .then(data => setCustomersOptions(data))
       .catch(error => console.error('Error fetching customers:', error));
     }, []);
-    const handleCustomerChange = (e) => {
-      const selectedCustomerCode = e.target.value;
-
-      fetch(`http://localhost:3001/customers/balance?cust_code=${selectedCustomerCode}`)
-        .then(response => response.json())
-        .then(data => {
-          setCurrentBalance(data.balance); 
-          setCustomerTerms(data.terms); 
-        })
-        .catch(error => console.error('Error fetching customer balance:', error));
-    };
-    // const handleItemChange = (e) => {
-    //   const selectedItem = itemDescriptions.find(item => item.product_desc === e.target.value);
-    //   if (selectedItem) {
-    //     setNewItem({
-    //       itemName: selectedItem.product_desc,
-    //       qty: selectedItem.case_qty,
-    //       rate:0,
-    //       discount: selectedItem.item_disc,
-    //       cost: selectedItem.cost,
-    //       retail: selectedItem.retail
-    //     });
-    //   }
-    // };
     const handleInputChange = (e, type) => {
       const value = parseFloat(e.target.value) || 0;
     
@@ -241,8 +477,8 @@ useEffect(() => {
         setCashAmount(value);
       } else if (type === 'bank') {
         setBankAmount(value);
-      }
-    };
+      }}
+  
     async function saveInvoice(formData) {
       try {
         const response = await fetch('http://localhost:3001/save-invoice', {
@@ -261,24 +497,25 @@ useEffect(() => {
       setSearchCustomer('');
       setCustomerTerms('');
       setItems([]);
-      setTotals({ subTotal: 0, discountTotal: 0, freightTotal: 0, expenseTotal: 0 });
+      setTotals({ subTotal: 0, discountTotal: '', freightTotal: 0, expenseTotal: 0 });
       setSalesman('');
+      setSelectedCustomer('');
       setCustomer('');
       setInvoiceNumber('');
       setSalesmenOptions([]);
       setCustomersOptions([]);
-      setCurrentBalance(0);
-      setCashAmount(0);
+      setCurrentBalance('');
+      setCashAmount('');
       setBankAmount('');
       setNetTotal(0);
       setCustomerCode(0);
       setSalesmanCode(0);
-      setNewItem({ itemName: '', qty: 0, rate: 0, discount: 0, cost: 0, retail: 0 });
+      setNewItem({ product_name: '', product_code:'',qty: 0, rate: 0, discount: 0, i_cost: 0, i_retail: 0 ,total:0});
       setSearchTerm('');
       setBank('');
-      setBankOptions([]);
+      // setBankOptions([]);
       setError('');
-      setCashReceive(0);
+      setCashReceive('');
       setCashRemaining(0);
       //setCurrentDateTime(''); 
         } else {
@@ -293,6 +530,16 @@ useEffect(() => {
   const handleSave = () => {
     const inv_type = customerTerms === 'CASH' ? 1 : customerTerms === 'CREDIT' ? 2 : 0;
     const invoiceData = {
+      inv_code:invoiceNumber,
+      s_no:1,
+      // product_code
+      // product_name
+      // rate
+      //discount
+      //qty
+      //case_qty
+      //i_retail
+      // i_cost
       inv_no:invoiceNumber,
       salesman_name:salesman,
       inv_date: currentDate,
@@ -300,15 +547,18 @@ useEffect(() => {
       cust_name:customer,
       cust_code: customerCode,  
       salesman_code:salesmanCode,
-      g_discount:totals.discountTotal,
+      bank_name:bank,
+      g_discount:totals.discountTotal || 0,
       // customerTerms,
       prv_balance:currentBalance,
       // items,
-      bank_amount: bankAmount,
-      cash_amount:cashAmount,
+      bank_amount: bankAmount ||0,
+      bank_cash_amount:cashAmount ||0,
+      cash_amount:cashReceive||0,
       // totals,
       g_amount:netTotal,
       inv_type: inv_type,
+      items:items
     };
     saveInvoice(invoiceData);
   localStorage.clear();
@@ -316,7 +566,19 @@ useEffect(() => {
  
 
   };
-  
+  // useEffect(() => {
+  //   // Check if cashAmount or bankAmount is modified and set the disabled state
+  //   if (cashAmount !== 0 || bankAmount !== 0) {
+  //     setIsDisabled(true);
+  //   } 
+  //   else if (cashAmount !== '' || bankAmount !== ''){
+  //     setIsDisabled(false);
+  //   }
+  //   else {
+  //     setIsDisabled(false);
+  //   }
+   
+  // }, [cashAmount, bankAmount]);
   
   const handleDelete = (index) => {
     const deletedItem = items[index];
@@ -324,20 +586,29 @@ useEffect(() => {
     setItems(newItems);
 
     const newSubTotal = totals.subTotal - deletedItem.total;
-    const newDiscountTotal = totals.discountTotal - parseFloat(deletedItem.discount);
+    // const newDiscountTotal = totals.discountTotal - parseFloat(deletedItem.discount);
 
-    setTotals({ ...totals, subTotal: newSubTotal, discountTotal: newDiscountTotal });
+    setTotals({ ...totals, subTotal: newSubTotal});
+    // , discountTotal: newDiscountTotal });
   };
 
   const handleAddItem = () => {
-    const total = (newItem.qty * newItem.rate) - newItem.discount;
+    if (newItem.discount > newItem.rate) {
+      alert('Error: Discount cannot be greater than the rate.');
+      const discountInput = document.querySelector('input[placeholder="0"][type="number"][value="' + newItem.discount + '"]');
+      if (discountInput) {
+        discountInput.focus();
+      }
+      return; // Stop execution if discount is invalid
+    }
+    const total = (newItem.rate - newItem.discount) * newItem.qty;
     setItems([...items, { ...newItem, total }]);
 
     const subTotal = totals.subTotal + total;
-    const discountTotal = totals.discountTotal + parseFloat(newItem.discount);
-    setTotals({ ...totals, subTotal, discountTotal });
-    setNewItem({ itemName: '', qty: 0, rate: 0, discount: 0,cost:0,retail:0 });
-    // setNewItem({ itemName: '', qty: 0, bonus: 0, rate: 0, discount: 0 });
+    setTotals({ ...totals, subTotal});
+    setNewItem({ product_name: '',product_code:'', qty: 0, rate: 0, discount: 0,i_cost:0,i_retail:0,total:0 });
+    setSelectedItem(null);
+    setFixQty(0);
   };
 
   return (
@@ -360,13 +631,21 @@ useEffect(() => {
       <div className={`menu-buttons ${menuOpen ? "show" : ""} `} >
       <div className='d-flex flex-wrap justify-content-end gap-3 responsive'>
       {/* <div className="d-flex flex-wrap justify-content-end gap-3 responsive"> */}
+      <button className="btn btn-secondary" 
+       onClick={fetchPreviousInvoice}
+      >
+          <i className="bi bi-arrow-left fs-5 fw-bold"></i>
+        </button>
+        <button className="btn btn-secondary" 
+         onClick={fetchForwardInvoice}
+        >
+          <i className="bi bi-arrow-right fs-5 fw-bold"></i>
+        </button>
         <button className="btn btn-dark text-white">Load</button>
         <button className="btn btn-danger">
           <i className="bi bi-list-ol text-white px-2"></i> List
         </button>
-        <button className="btn btn-secondary">
-          <i className="bi bi-arrow-right fs-5 fw-bold"></i>
-        </button>
+        
         <button className="btn dark-blue text-white">
           <i className="bi bi-pencil-square text-white px-2"></i> Modify
         </button>
@@ -401,48 +680,17 @@ useEffect(() => {
      <div className="col-md-5 d-flex gap-2 align-items-center">
           <label className="text-nowrap fw-bold" style={{ minWidth: "100px" }}>Salesman</label>
           <div className="position-relative w-100">
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search Salesman"
-              value={searchTerm || salesman}
-              // onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => handleKeyDown(e, filteredOptions, handleSalesmanSelect)}
-              onChange={(e) => {
-    setSearchTerm(e.target.value);
-    if (e.target.value === '') {
-      setSalesman(''); // Reset the field to placeholder if empty
-    }
-  }}
-            />
 
-            {/* Dropdown for search results */}
-            {/* {searchTerm && (
-              <div className="dropdown-menu w-100" style={{ maxHeight: '200px', overflowY: 'auto', display: 'block' }}>
-                {filteredOptions.map((option, index) => (
-                  <button
-                    key={index}
-                    className="dropdown-item"
-                    onClick={() => handleSalesmanSelect(option)}
-                  >
-                    {option.emp_name}
-                  </button>
-                ))}
-              </div>
-            )} */}
-               {searchTerm && (
-              <div className="dropdown-menu w-100 show">
-                {filteredOptions.map((option, index) => (
-                  <button
-                    key={index}
-                    className={`dropdown-item ${index === selectedIndex ? 'active' : ''}`}
-                    onClick={() => handleSalesmanSelect(option)}
-                  >
-                    {option.emp_name}
-                  </button>
-                ))}
-              </div>
-            )}
+            <Select
+            value={selectedSalesman}
+            onChange={handleSalesmanChange}
+            options={optionssale}
+            placeholder="Search Salesman"
+            isClearable
+            classNamePrefix="react-select"
+               className="color-border"
+               styles={customStyles}
+          />
           </div>
         </div>
     {/* Invoice Date Field */}
@@ -461,59 +709,22 @@ useEffect(() => {
   <div className="col-md-5 d-flex gap-2 align-items-center">
   <label className="text-nowrap fw-bold" style={{ minWidth: "100px" }}>Customer</label>
   <div className="position-relative w-100">
-    <input
-      type="text"
-      className="form-control"
-      placeholder="Search Customer"
-      value={searchCustomer || customer}
-      // onChange={(e) => setSearchCustomer(e.target.value)}
-      onKeyDown={(e) => handleKeyDown(e, filteredCustomerOptions, handleCustomerSelect)}
-      onChange={(e) => {
-    setSearchCustomer(e.target.value);
-    if (e.target.value === '') {
-      setCustomer(''); // Reset the field to placeholder if empty
-setCurrentBalance(0);
-setCustomerCode(''
-);
-setCustomerTerms('');
-    }
-  }}
-    />
-
-    {/* Dropdown for search results */}
-    {/* {searchCustomer && (
-      <div className="dropdown-menu w-100" style={{ maxHeight: '200px', overflowY: 'auto', display: 'block' }}>
-        {filteredCustomerOptions.map((option, index) => (
-          <button
-            key={index}
-            className="dropdown-item"
-            onClick={() => handleCustomerSelect(option)}
-          >
-            {option.cust_name} 
-            
-          </button>
-        ))}
-      </div>
-    )} */}
-    {searchCustomer && (
-              <div className="dropdown-menu w-100 show">
-                {filteredCustomerOptions.map((option, index) => (
-                  <button
-                    key={index}
-                    className={`dropdown-item ${index === selectedIndex ? 'active' : ''}`}
-                    onClick={() => handleCustomerSelect(option)}
-                  >
-                    {option.cust_name}
-                  </button>
-                ))}
-              </div>
-            )}
-  </div>
+      <Select
+        value={selectedCustomer}
+        onChange={handleChange}
+        options={options}
+        placeholder="Search Customer"
+        isClearable
+        classNamePrefix="react-select"
+           className="color-border"
+           styles={customStyles}
+      />
+    </div>
 </div>
     <div className="col-md-5 d-flex gap-2 align-items-center">
       <label className="text-nowrap fw-bold" style={{ minWidth: "100px" }}>Terms</label>
       <div className="position-relative w-100">
-          <select className="form-control" value={customerTerms}> 
+          <select className="form-control" value={customerTerms} readOnly> 
             <option>
           {customerTerms}
           </option>
@@ -532,7 +743,7 @@ setCustomerTerms('');
 </div>
    {currentBalance !== null && (
         <div className="row mb-3">
-          <p className="text-muted">Current Balance: {currentBalance}</p>
+          <p className="text-muted">Previous Balance: {currentBalance}</p>
         </div>
       )}
       <hr className="my-5 nextTask"/>
@@ -544,75 +755,36 @@ setCustomerTerms('');
       {/* <th style={{ padding: '10px' }}>Bonus</th> */}
       <th style={{ padding: '10px' }}>Rate</th>
       <th style={{ padding: '10px' }}>Discount</th>
+     
+      <th style={{ padding: '10px' }}>Action</th>
       <th style={{ padding: '10px' }} className='d-none'>Cost</th>
       <th style={{ padding: '10px' }} className='d-none'>Retail</th>
-      <th style={{ padding: '10px' }}>Action</th>
     </tr>
   </thead>
   <tbody>
     <tr>
     <td style={{ padding: '10px', width: "35%" }}>
   <div className="position-relative w-100">
-    <input
-      type="text"
-      className="form-control"
-      placeholder="Search Item"
-      value={searchItem || newItem.itemName}
-      // onChange={(e) => setSearchItem(e.target.value)}
-      onKeyDown={(e) => handleKeyDown(e, filteredItemOptions, handleItemSelect)}
-      onChange={(e) => {
-    setSearchItem(e.target.value);
-    if (e.target.value === '') {
-         setNewItem({
-    itemName: '',
-    qty: 0,
-    rate: 0,
-    discount: 0,
-    cost: 0,
-    retail: 0,
-  });
-    }
-  }}
-    />
-
-    {/* Dropdown for filtered item options */}
-    {/* {searchItem && (
-      <div
-        className="dropdown-menu w-100"
-        style={{
-          maxHeight: '200px',
-          overflowY: 'auto',
-          display: 'block',
-        }}
-      >
-        {filteredItemOptions.map((option, index) => (
-          <button
-            key={index}
-            className="dropdown-item"
-            onClick={() => handleItemSelect(option)}
-          >
-            {option.product_desc}
-          </button>
-        ))}
-      </div>
-    )} */}
-        {searchItem && (
-              <div className="dropdown-menu w-100 show" style={{
-          maxHeight: '200px',
-          overflowY: 'auto',
-          display: 'block',
-        }}>
-                {filteredItemOptions.map((option, index) => (
-                  <button
-                    key={index}
-                    className={`dropdown-item ${index === selectedIndex ? 'active' : ''}`}
-                    onClick={() => handleItemSelect(option)}
-                  >
-                    {option.product_desc}
-                  </button>
-                ))}
-              </div>
-            )}
+  <Select
+          value={selectedItem}
+          onChange={onItemSelectChange} 
+          //onChange={(option, actionMeta) => onItemSelectChange(option, actionMeta?.event)}
+          options={optionsitem}
+          placeholder="Search Item"
+          isClearable
+          classNamePrefix="react-select"
+             className="color-border"
+             styles={customStyles}
+            //  onKeyDown={(e) => {
+            //   if (e.key === 'Enter') {
+            //     e.preventDefault();
+            //     const nextElement = e.target.closest('td')?.nextElementSibling?.querySelector('input');
+            //     if (nextElement) {
+            //       nextElement.focus();  // Move focus to next input field (Qty)
+            //     }
+            //   }
+            // }}
+        />
   </div>
 </td>
       <td style={{ padding: '10px' }}>
@@ -621,8 +793,18 @@ setCustomerTerms('');
                     step="0.01"
                     className="form-control"
                     value={newItem.qty}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault(); 
+                        const nextElement = e.target.closest('td')?.nextElementSibling?.querySelector('input');
+                        if (nextElement) {
+                          nextElement.focus();
+                        }
+                      }
+                    }}
                     onChange={(e) => setNewItem({ ...newItem, qty: parseFloat(e.target.value) })}
-                    placeholder="Quantity"
+                    placeholder="0"
+                    min="0" 
                   />
       </td>
       <td style={{ padding: '10px' }}>
@@ -631,8 +813,20 @@ setCustomerTerms('');
              step="0.01"
           className="form-control"
           value={newItem.rate}
+          min="0" 
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault(); // Prevent form submission or any default behavior
+              //handleKeyDown(e, filteredItemOptions, handleItemSelect); // Call your existing keydown logic
+              const nextElement = e.target.closest('td')?.nextElementSibling?.querySelector('input');
+              if (nextElement) {
+                nextElement.focus();
+              }
+            }
+          }}
+          // onKeyDown={(e) => handleKeyDown(e, filteredItemOptions, handleItemSelect)}
           onChange={(e) => setNewItem({ ...newItem, rate: parseFloat(e.target.value) })}
-          placeholder="Rate"
+          placeholder="0"
         />
       </td>
       <td style={{ padding: '10px' }}>
@@ -640,31 +834,22 @@ setCustomerTerms('');
                     type="number"
                        step="0.01"
                     className="form-control"
+                    min="0" 
                     value={newItem.discount}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault(); // Prevent default behavior
+                        const nextElement = e.target.closest('td')?.nextElementSibling?.querySelector('input, button');
+                        if (nextElement) {
+                          nextElement.focus();
+                        }
+                      }
+                    }}
                     onChange={(e) => setNewItem({ ...newItem, discount: parseFloat(e.target.value) })}
-                    placeholder="Discount"
+                    placeholder="0"
                   />
       </td>
-      <td style={{ padding: '10px' }} className='d-none'>
-        <input
-          type="number"
-             step="0.01"
-          className="form-control"
-          value={newItem.cost}
-          onChange={(e) => setNewItem({ ...newItem, cost: parseFloat(e.target.value) })}
-          placeholder="Cost"
-        />
-      </td>
-      <td style={{ padding: '10px' }} className='d-none'>
-         <input
-                    type="number"
-                       step="0.01"
-                    className="form-control "
-                    value={newItem.retail}
-                    onChange={(e) => setNewItem({ ...newItem, retail: parseFloat(e.target.value) })}
-                    placeholder="Retail"
-                  />
-      </td>
+  
       <td style={{ padding: '10px' }}>
         <button
           className="btn btn-success"
@@ -674,11 +859,34 @@ setCustomerTerms('');
           <i className="bi bi-plus"></i>
         </button>
       </td>
+      <td style={{ padding: '10px' }} className='d-none'>
+        <input
+          type="number"
+             step="0.01"
+          className="form-control"
+          value={newItem.i_cost}
+          onChange={(e) => setNewItem({ ...newItem, i_cost: parseFloat(e.target.value) })}
+          placeholder="Cost"
+        />
+      </td>
+      <td style={{ padding: '10px' }} className='d-none'>
+         <input
+                    type="number"
+                       step="0.01"
+                    className="form-control "
+                    value={newItem.i_retail}
+                    onChange={(e) => setNewItem({ ...newItem, i_retail: parseFloat(e.target.value) })}
+                    placeholder="Retail"
+                  />
+      </td>
     </tr>
   </tbody>
 </table>
 <div className="row mx-1">
-          <p className="text-muted">Current Quantity: {newItem.qty} </p>
+          <p className="text-muted">Current Quantity : {fixQty}
+
+
+          </p>
         </div>
       {/* Items Table */}
       {items.length > 0 && (
@@ -708,13 +916,13 @@ setCustomerTerms('');
                 </button>
               </td>
               <td>{index + 1}</td>
-              <td>{item.itemName}</td>
+              <td>{item.product_name}</td>
               <td>{item.qty}</td>
               {/* <td>{item.bonus}</td> */}
               <td>{item.rate}</td>
               <td>{item.discount}</td>
-              <td className='d-none'>{item.cost}</td>
-              <td className='d-none'>{item.retail}</td>
+              <td className='d-none'>{item.i_cost}</td>
+              <td className='d-none'>{item.i_retail}</td>
               <td>{item.total}</td>
             </tr>
           ))}
@@ -725,51 +933,72 @@ setCustomerTerms('');
 <div className="d-flex justify-content-between w-100 px-5 my-5 endSection">
   
   {/* LEFT SECTION */}
-  <div className="row my-3 py-3 box" style={{ width: "45%", border: "2px solid #98198e", borderRadius: "20px", padding: "0 20px" }}>
+  <div className="d-flex my-3 py-3 box align-items-center" style={{ width: "45%", border: "2px solid #98198e", borderRadius: "20px",
+     padding: "0 30px" }}>
    
-  <div className="row w-100">
+
     {/* Bank Name */}
-    <div className="d-flex gap-2 align-items-center">
+    <div className="d-flex gap-2 align-items-start" style={{flexDirection:"column"}}>
       <label className="text-wrap fw-bold txt-dec" style={{ minWidth: "100px" }}>Bank Name</label>
       <div className="position-relative w-100">
-        <select
+      <Select
+        value={bankOptions.find(option => option.value === selectedBank)||bank}
+        onChange={handleBankSelectionChange}
+        options={bankOptions}
+        placeholder="Select Bank"
+        classNamePrefix="react-select-bank"
+        className='color-border'
+
+        isClearable
+      />
+        {/* <select
           className="form-control"
           value={bank}
           onChange={(e) => setBank(e.target.value)}
-        >
-          <option value=""></option>
-          {/* {bankOptions.map((option, index) => (
-    <option key={index} value={option.bank_name}>{option.bank_name}</option>
-  ))} */}
-        </select>
-        <span className="position-absolute" style={{ right: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>&#x25BC;</span>
+         >
+          <option value="MCB">Select Bank</option>
+          <option value="MCB">MCB</option>
+          <option value="HBL">HBL</option>
+          <option value="UBL">UBL</option>
+        </select> */}
+
       </div>
-    </div> 
-{/* logically */}
-    {/* Bank Amount and Cash */}
-    <div className="row w-100 mt-2">
+    <div className="row w-100 mt-4">
       <div className="col d-flex gap-4 align-items-center">
         <label className="fw-bold text-nowrap txt-dec" style={{ whiteSpace: "normal" }}>Bank</label>
         <input
-          type="text"
+          type="number"
+          step="0.01"
+          min='0'
           className="form-control"
-          placeholder="0"
-          value={bankAmount}
+           placeholder="0"
+          value={bankAmount }
           onChange={(e) => handleInputChange(e, 'bank')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              document.getElementById('cashInput').focus();
+            }
+          }}
         />
       </div>
 
       <div className="col d-flex gap-4 align-items-center">
         <label className="fw-bold txt-dec">Cash</label>
         <input
+        step="0.01"
+        min='0'
+placeholder='0'
           type="number"
           className="form-control"
+          id="cashInput"
           value={cashAmount}
           onChange={(e) => handleInputChange(e, 'cash')}
         />
       </div>
     </div>
-    {error && <div style={{ color: 'red' }}>{error}</div>}
+    {(cashAmount != 0 || bankAmount !=0) && error && <div style={{ color: 'red' }}>{error}</div>}
+
   </div>
 </div>
   {/* TOTAL BILL CALCULATE */}
@@ -784,7 +1013,19 @@ setCustomerTerms('');
           </tr>
           <tr>
             <td className="txt-dec">Discount Total:</td>
-            <td><div className="bold">{totals.discountTotal}</div></td>
+            <td>
+            <input
+          type="number"
+          // style={{width:'5vw'}}
+          // step='2'
+          className="form-control"
+          min='0'
+          placeholder="0"
+          value={totals.discountTotal}
+          onChange={(e) => setTotals({ ...totals, discountTotal: e.target.value })}
+
+        /></td>
+            {/* <td><div className="bold">{totals.discountTotal}</div></td> */}
           </tr>
           {/* <tr>
             <td className="txt-dec">Freight Total:</td>
@@ -794,41 +1035,50 @@ setCustomerTerms('');
             <td className="txt-dec">Expense Total:</td>
             <td><div className="bold">{totals.expenseTotal}</div></td>
           </tr>
+          <br/>
+          
           <tr style={{ background: "#800080", color: "white" }}>
             <td><strong>Net Total:</strong></td>
             <td ><div><strong>{netTotal}</strong></div></td>
+            <br/>
+         
           </tr>
-          <hr/>
-          <div className="row w-100 mt-2">
-      <div className="col d-flex gap-4 align-items-center">
-        <label className="fw-bold text-wrap txt-dec" style={{ whiteSpace: "normal" }}>Cash Received</label>
+          <br/>
+          <hr  className='mx-5'/>
+          
+          <div className="d-flex mt-4 gap-4 w-100" >
+      <div className="col-6 d-flex gap-4 align-items-center w-50">
+        <label className="fw-bold  txt-dec">Cash Received</label>
         <input
           type="number"
           step='2'
-          className="form-control"
+          className="form-control "
           placeholder="0"
-          value={cashReceive}
-          onChange={(e) => {
-            const newCashReceive = parseFloat(e.target.value) || 0;
-            setCashReceive(newCashReceive);
-            setCashRemaining(netTotal - newCashReceive);
-          }}
+           value={cashReceive}
+           id="mycash"
+
+          onChange={handleCashReceiveChange}
+           disabled={cashAmount != 0 || bankAmount != 0} 
+          // disabled={isDisabled}
+          
         />
       </div>
 
-      <div className="col d-flex gap-4 align-items-center">
-        <label className="fw-bold txt-dec">Cash Remaining</label>
+      <div className="col-6 d-flex gap-2 align-items-center w-50">
+        <label className="fw-bold txt-dec">Remaining Balance</label>
         <input
       
     type="number"
     step='2'
           className="form-control"
           placeholder='0'
-           value={cashRemaining}
+           value={cashRemaining} 
            readOnly
         />
       </div>
+     
     </div>
+    <br/>
         </tbody>
       </table>
     </div>

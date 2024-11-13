@@ -130,26 +130,26 @@ app.get('/branch_info', async (req, res) => {
        res.status(500).send(err.message);
      }
    });
-   app.get('/bank', async (req, res) => {
-    try {
-     const result = await pool.request()
- .input('branch_id', sql.VarChar, branch_G)
- .query("select *from accounts_master where account_type='901' and  branch_id = @branch_id");
-             console.log("Bank Field Done: " + JSON.stringify(result.recordset, null, 2));
+//    app.get('/bank', async (req, res) => {
+//     try {
+//      const result = await pool.request()
+//  .input('branch_id', sql.VarChar, branch_G)
+//  .query("select *from accounts_master where account_type='901' and  branch_id = @branch_id");
+//              console.log("Bank Field Done: " + JSON.stringify(result.recordset, null, 2));
 
-  res.json(result.recordset);
-    } catch (err) {
-      console.error('Query Error: ', err);
-      res.status(500).send(err.message);
-    }
-  });
+//   res.json(result.recordset);
+//     } catch (err) {
+//       console.error('Query Error: ', err);
+//       res.status(500).send(err.message);
+//     }
+//   });
 
 // API to fetch customers
     app.get('/customers', async (req, res) => {
    try {
     const result = await pool.request()
     .input('branch_id', sql.VarChar, branch_G)
-    .query("SELECT cust_name,cust_code,cust_current_bal FROM customer_info where cust_active=1 and branch_id = @branch_id");
+    .query("SELECT cust_name,cust_code,cust_current_bal, cust_terms FROM customer_info where cust_active=1 and branch_id = @branch_id");
       console.log("customer Field Set"+ JSON.stringify(result.recordset, null, 2));
        res.json(result.recordset);
      } catch (err) {
@@ -157,28 +157,28 @@ app.get('/branch_info', async (req, res) => {
        res.status(500).send(err.message);
      }
    });
-app.get('/customers/balance', async (req, res) => { 
-  const customerCode = req.query.cust_code; // Get customer code from query parameters
+// app.get('/customers/balance', async (req, res) => { 
+//   const customerCode = req.query.cust_code; // Get customer code from query parameters
   
-  if (!customerCode) {
-    return res.status(400).json({ message: 'Customer code is required' });
-  }
+//   if (!customerCode) {
+//     return res.status(400).json({ message: 'Customer code is required' });
+//   }
 
-  try {
-    // SQL query to fetch the customer balance and terms based on cust_code
-    const result = await sql.query`SELECT cust_current_bal, cust_terms FROM customer_info WHERE cust_code = ${customerCode}`;
+//   try {
+//     // SQL query to fetch the customer balance and terms based on cust_code
+//     const result = await sql.query`SELECT cust_current_bal, cust_terms FROM customer_info WHERE cust_code = ${customerCode}`;
     
-    if (result.recordset.length > 0) {
-      const { cust_current_bal, cust_terms } = result.recordset[0];
-      res.json({ balance: cust_current_bal, terms: cust_terms }); // Return both balance and terms
-    } else {
-      res.status(404).json({ message: 'Customer not found' });
-    }
-  } catch (error) {
-    console.error('Error fetching customer balance:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+//     if (result.recordset.length > 0) {
+//       const { cust_current_bal, cust_terms } = result.recordset[0];
+//       res.json({ balance: cust_current_bal, terms: cust_terms }); // Return both balance and terms
+//     } else {
+//       res.status(404).json({ message: 'Customer not found' });
+//     }
+//   } catch (error) {
+//     console.error('Error fetching customer balance:', error);
+//     res.status(500).json({ message: 'Server error' });
+//   }
+// });
 // Endpoint to get item descriptions
 app.get('/item_descriptions', async (req, res) => {
   try {
@@ -196,23 +196,28 @@ app.get('/item_descriptions', async (req, res) => {
 app.post('/save-invoice', async (req, res) => {
   const {
     inv_no, status, branch_id, wk_no, inv_type, cust_code, cust_name, prv_balance, inv_date, g_amount, inv_datetime,
-    g_discount, cash_amount, cust_remarks, cust_ref, freight_account, freight_amount, 
-    exp_amount, exp_account, salesman_code, salesman_name, tax_account, tax_amount, 
-    Cash_Credit_ACC, credit_card_amount, Credit_Card_ACC, inv_ref, bank_amount, bank_no, 
-    bank_name, bank_cash_amount, ship_address_to, cattons_qty, cargo_name, cargo_code, 
-    ship_no, bilty_no, bilty_date, Qt_no, sms, sale_branch
+    g_discount, cash_amount, bank_amount, bank_cash_amount, salesman_code, salesman_name, bank_name,
+    // Additional fields for invoice_details table
+    inv_code, s_no, product_code, product_name, rate, discount, qty, case_qty, remarks, tax_amount, tax_ACC,
+    i_retail, i_cost, imei_no, uom, Qt_no, Qt_branch, tax_perc, dmg_status, dmg_set, clear_set,items
   } = req.body;
 
   try {
-    // Insert query into invoice_master table
-    const result = await pool.request()
-      .input('inv_no',sql.Decimal(18, 0), inv_no)
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin();
+
+    // Insert into invoice_master table
+    const requestMaster = new sql.Request(transaction);
+    await requestMaster
+    
+    .input('inv_no',sql.Decimal(18, 0), inv_no)
       .input('branch_id', sql.VarChar(50), branch_G)
       
       // .input('cust_code', sql.Decimal(18, 0), cust_code)
       .input('cust_name', sql.VarChar(250), cust_name)
       .input('cust_code', sql.Decimal(18, 0), cust_code)
       .input('salesman_name', sql.VarChar(250), salesman_name)
+      .input('bank_name', sql.VarChar(250), bank_name)
       .input('salesman_code', sql.Decimal(18, 0), salesman_code)
       .input('prv_balance', sql.Decimal(18, 2), prv_balance)
       .input('inv_date', sql.DateTime, inv_date)
@@ -220,20 +225,177 @@ app.post('/save-invoice', async (req, res) => {
       .input('g_discount', sql.Decimal(18, 2), g_discount)
       .input('bank_amount', sql.Decimal(18, 2), bank_amount)
       .input('cash_amount', sql.Decimal(18, 2), cash_amount)
+      .input('bank_cash_amount', sql.Decimal(18, 2),bank_cash_amount)
+
       .input('inv_datetime',sql.DateTime,inv_datetime)
       .input('inv_type',sql.Int,inv_type)
       .query(`
-        INSERT INTO invoice_master (inv_no, status, branch_id, wk_no, salesman_code,salesman_name,cust_code,cust_name, prv_balance, inv_date,inv_datetime,bank_amount,cash_amount,inv_type,g_amount, g_discount)
-        VALUES (@inv_no, 2, @branch_id, 1,@salesman_code,@salesman_name,@cust_code, @cust_name, @prv_balance, @inv_date, @inv_datetime,@bank_amount,@cash_amount,@inv_type,@g_amount,@g_discount)
+        INSERT INTO invoice_master (inv_no, status, branch_id, wk_no, salesman_code,salesman_name,cust_code,cust_name, prv_balance, inv_date,inv_datetime,bank_amount,cash_amount,inv_type,g_amount, g_discount,bank_name,bank_cash_amount)
+        VALUES (@inv_no, 2, @branch_id, 1,@salesman_code,@salesman_name,@cust_code, @cust_name, @prv_balance, @inv_date, @inv_datetime,@bank_amount,@cash_amount,@inv_type,@g_amount,@g_discount,@bank_name,@bank_cash_amount)
       `);
+      
+    // const requestDetails = new sql.Request(transaction);
+    // await requestDetails
+    //   .input('inv_code', sql.Decimal(18, 0), inv_code)
+    //   .input('branch_id', sql.VarChar(50), branch_G)
+    //   .input('s_no', sql.Int, s_no)
+      
+      //.input('product_code', sql.Decimal(18, 0), product_code)
+      //.input('product_name', sql.VarChar(500), product_name)
+      //.input('rate', sql.Decimal(18, 2), rate)
+      //.input('discount', sql.Decimal(18, 2), discount)
+      //.input('qty', sql.Decimal(18, 3), qty)
+      //.input('case_qty', sql.Decimal(18, 0), case_qty)
+  
+      // .input('i_retail', sql.Decimal(18, 2), i_retail)
+      // .input('i_cost', sql.Decimal(18, 2), i_cost)
+      // .query(`
+      //   INSERT INTO invoice_details (inv_code, status, wk_no, branch_id, s_no, product_code, product_name, rate, discount, qty, case_qty, i_retail, i_cost)
+      //   VALUES (@inv_code, 2, 1, @branch_id, @s_no, @product_code, @product_name, @rate, @discount, @qty, @case_qty, @i_retail, @i_cost)
+      // `);
+      // .query(`
+      //   INSERT INTO invoice_detail (inv_code, status, wk_no, branch_id, s_no)
+      //   VALUES (@inv_code, 2, 1, @branch_id,  @s_no)
+      // `);
+// Insert each item into `invoice_detail`
+for (let i = 0; i < items.length; i++) {
+  const item = items[i];
 
-    res.json({ success: true, message: 'Invoice saved successfully.' });
+  const requestDetails = new sql.Request(transaction);
+  await requestDetails
+    .input('inv_code', sql.Decimal(18, 0), inv_no) // Assuming `inv_no` serves as `inv_code`
+    .input('branch_id', sql.VarChar(50), branch_G)
+    .input('s_no', sql.Int, i + 1) // Auto-incrementing serial number
+    .input('product_code', sql.Decimal(18, 2), item.product_code)
+    .input('product_name', sql.VarChar(500), item.product_name)
+    .input('rate', sql.Decimal(18, 2), item.rate)
+    .input('discount', sql.Decimal(18, 2), item.discount)
+    .input('qty', sql.Decimal(18, 3), item.qty)
+    .input('case_qty', sql.Decimal(18, 0), item.case_qty || 1) // Optional field
+    .input('i_retail', sql.Decimal(18, 2), item.i_retail)
+    .input('i_cost', sql.Decimal(18, 2), item.i_cost)
+    .query(`
+      INSERT INTO invoice_detail (inv_code, status, wk_no, branch_id, s_no, product_code, product_name, rate, discount, qty, case_qty, i_retail, i_cost)
+      VALUES (@inv_code, 2, 1, @branch_id, @s_no, @product_code, @product_name, @rate, @discount, @qty, @case_qty, @i_retail, @i_cost)
+    `);
+}
+    await transaction.commit();
+
+    res.json({ success: true, message: 'Invoice and details saved successfully.' });
   } catch (err) {
     console.error('Insert Query Error:', err);
-    res.status(500).json({ success: false, message: 'Error saving invoice.' });
+    res.status(500).json({ success: false, message: 'Error saving invoice and details.' });
   }
+  // const {
+  //   inv_no, status, branch_id, wk_no, inv_type, cust_code, cust_name, prv_balance, inv_date, g_amount, inv_datetime,
+  //   g_discount, cash_amount, cust_remarks, cust_ref, freight_account, freight_amount, 
+  //   exp_amount, exp_account, salesman_code, salesman_name, tax_account, tax_amount, 
+  //   Cash_Credit_ACC, credit_card_amount, Credit_Card_ACC, inv_ref, bank_amount, bank_no, 
+  //   bank_name, bank_cash_amount, ship_address_to, cattons_qty, cargo_name, cargo_code, 
+  //   ship_no, bilty_no, bilty_date, Qt_no, sms, sale_branch
+  // } = req.body;
+
+  // try {
+  //   // Insert query into invoice_master table
+  //   const result = await pool.request()
+  //     .input('inv_no',sql.Decimal(18, 0), inv_no)
+  //     .input('branch_id', sql.VarChar(50), branch_G)
+      
+  //     // .input('cust_code', sql.Decimal(18, 0), cust_code)
+  //     .input('cust_name', sql.VarChar(250), cust_name)
+  //     .input('cust_code', sql.Decimal(18, 0), cust_code)
+  //     .input('salesman_name', sql.VarChar(250), salesman_name)
+  //     .input('bank_name', sql.VarChar(250), bank_name)
+  //     .input('salesman_code', sql.Decimal(18, 0), salesman_code)
+  //     .input('prv_balance', sql.Decimal(18, 2), prv_balance)
+  //     .input('inv_date', sql.DateTime, inv_date)
+  //     .input('g_amount', sql.Decimal(18, 2), g_amount)
+  //     .input('g_discount', sql.Decimal(18, 2), g_discount)
+  //     .input('bank_amount', sql.Decimal(18, 2), bank_amount)
+  //     .input('cash_amount', sql.Decimal(18, 2), cash_amount)
+  //     .input('bank_cash_amount', sql.Decimal(18, 2),bank_cash_amount)
+
+  //     .input('inv_datetime',sql.DateTime,inv_datetime)
+  //     .input('inv_type',sql.Int,inv_type)
+  //     .query(`
+  //       INSERT INTO invoice_master (inv_no, status, branch_id, wk_no, salesman_code,salesman_name,cust_code,cust_name, prv_balance, inv_date,inv_datetime,bank_amount,cash_amount,inv_type,g_amount, g_discount,bank_name,bank_cash_amount)
+  //       VALUES (@inv_no, 2, @branch_id, 1,@salesman_code,@salesman_name,@cust_code, @cust_name, @prv_balance, @inv_date, @inv_datetime,@bank_amount,@cash_amount,@inv_type,@g_amount,@g_discount,@bank_name,@bank_cash_amount)
+  //     `);
+
+  //   res.json({ success: true, message: 'Invoice saved successfully.' });
+  // } catch (err) {
+  //   console.error('Insert Query Error:', err);
+  //   res.status(500).json({ success: false, message: 'Error saving invoice.' });
+  // }
 });
 
+app.post('/get-previous-invoice', async (req, res) => {
+  const { inv_no } = req.body;
+
+  try {
+    const result = await pool.request()
+      .input('inv_no', sql.Decimal(18, 0), inv_no)
+      .query(`
+    SELECT 
+    invoice_master.*,   
+    invoice_detail.*   
+FROM 
+    invoice_master
+JOIN 
+    invoice_detail ON invoice_master.inv_no = invoice_detail.inv_code
+WHERE 
+ invoice_master.inv_no = (
+            SELECT MAX(inv_no)
+            FROM invoice_master
+            WHERE inv_no < @inv_no
+          );
+    
+
+        
+      `);
+
+    if (result.recordset.length > 0) {
+      res.json({ success: true, invoice: result.recordset });
+    } else {
+      res.json({ success: false, message: 'No previous invoice found.' });
+    }
+  } catch (err) {
+    console.error('Error fetching previous invoice:', err);
+    res.status(500).json({ success: false, message: 'Error fetching previous invoice.' });
+  }
+});
+app.post('/get-next-invoice', async (req, res) => {
+  const { inv_no } = req.body;
+
+  try {
+    const result = await pool.request()
+      .input('inv_no', sql.Decimal(18, 0), inv_no)
+      .query(`
+        SELECT 
+          invoice_master.*,   
+          invoice_detail.*   
+        FROM 
+          invoice_master
+        JOIN 
+          invoice_detail ON invoice_master.inv_no = invoice_detail.inv_code
+        WHERE 
+          invoice_master.inv_no = (
+            SELECT MIN(inv_no)
+            FROM invoice_master
+            WHERE inv_no > @inv_no
+          );
+      `);
+
+    if (result.recordset.length > 0) {
+      res.json({ success: true, invoice: result.recordset });
+    } else {
+      res.json({ success: false, message: 'No next invoice found.' });
+    }
+  } catch (err) {
+    console.error('Error fetching next invoice:', err);
+    res.status(500).json({ success: false, message: 'Error fetching next invoice.' });
+  }
+});
 
   // Start the server
   app.listen(3001, () => {
