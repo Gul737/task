@@ -196,7 +196,7 @@ app.get('/item_descriptions', async (req, res) => {
 app.post('/save-invoice', async (req, res) => {
   const {
     inv_no, status, branch_id, wk_no, inv_type, cust_code, cust_name, prv_balance, inv_date, g_amount, inv_datetime,
-    g_discount, cash_amount, bank_amount, bank_cash_amount, salesman_code, salesman_name, bank_name,
+    g_discount, cash_amount, bank_amount, bank_cash_amount, salesman_code, salesman_name, bank_name,cust_ref,
     // Additional fields for invoice_details table
     inv_code, s_no, product_code, product_name, rate, discount, qty, case_qty, remarks, tax_amount, tax_ACC,
     i_retail, i_cost, imei_no, uom, Qt_no, Qt_branch, tax_perc, dmg_status, dmg_set, clear_set,items
@@ -212,7 +212,7 @@ app.post('/save-invoice', async (req, res) => {
     
     .input('inv_no',sql.Decimal(18, 0), inv_no)
       .input('branch_id', sql.VarChar(50), branch_G)
-      
+      .input('cust_ref', sql.VarChar(250),cust_ref)
       // .input('cust_code', sql.Decimal(18, 0), cust_code)
       .input('cust_name', sql.VarChar(250), cust_name)
       .input('cust_code', sql.Decimal(18, 0), cust_code)
@@ -228,10 +228,10 @@ app.post('/save-invoice', async (req, res) => {
       .input('bank_cash_amount', sql.Decimal(18, 2),bank_cash_amount)
 
       .input('inv_datetime',sql.DateTime,inv_datetime)
-      .input('inv_type',sql.Int,inv_type)
+      .input('inv_type',sql.Int,inv_type) 
       .query(`
-        INSERT INTO invoice_master (inv_no, status, branch_id, wk_no, salesman_code,salesman_name,cust_code,cust_name, prv_balance, inv_date,inv_datetime,bank_amount,cash_amount,inv_type,g_amount, g_discount,bank_name,bank_cash_amount)
-        VALUES (@inv_no, 2, @branch_id, 1,@salesman_code,@salesman_name,@cust_code, @cust_name, @prv_balance, @inv_date, @inv_datetime,@bank_amount,@cash_amount,@inv_type,@g_amount,@g_discount,@bank_name,@bank_cash_amount)
+        INSERT INTO invoice_master (inv_no, status, branch_id, wk_no, salesman_code,salesman_name,cust_code,cust_name, prv_balance, inv_date,inv_datetime,bank_amount,cash_amount,inv_type,g_amount, g_discount,bank_name,bank_cash_amount,cust_ref)
+        VALUES (@inv_no, 2, @branch_id, 1,@salesman_code,@salesman_name,@cust_code, @cust_name, @prv_balance, @inv_date, @inv_datetime,@bank_amount,@cash_amount,@inv_type,@g_amount,@g_discount,@bank_name,@bank_cash_amount,@cust_ref)
       `);
       
     // const requestDetails = new sql.Request(transaction);
@@ -263,7 +263,7 @@ for (let i = 0; i < items.length; i++) {
 
   const requestDetails = new sql.Request(transaction);
   await requestDetails
-    .input('inv_code', sql.Decimal(18, 0), inv_no) // Assuming `inv_no` serves as `inv_code`
+    .input('inv_code', sql.Decimal(18, 0), inv_code) // Assuming `inv_no` serves as `inv_code`
     .input('branch_id', sql.VarChar(50), branch_G)
     .input('s_no', sql.Int, i + 1) // Auto-incrementing serial number
     .input('product_code', sql.Decimal(18, 2), item.product_code)
@@ -394,6 +394,124 @@ app.post('/get-next-invoice', async (req, res) => {
   } catch (err) {
     console.error('Error fetching next invoice:', err);
     res.status(500).json({ success: false, message: 'Error fetching next invoice.' });
+  }
+});
+app.post('/modify-invoice', async (req, res) => {
+  const {
+    inv_no, status, branch_id, wk_no, inv_type, cust_code, cust_name, prv_balance, inv_date, g_amount, inv_datetime,
+    g_discount, cash_amount, bank_amount, bank_cash_amount, salesman_code, salesman_name, bank_name, cust_ref,
+    inv_code, s_no, product_code, product_name, rate, discount, qty, case_qty, remarks, tax_amount, tax_ACC,
+    i_retail, i_cost, imei_no, uom, Qt_no, Qt_branch, tax_perc, dmg_status, dmg_set, clear_set, items
+  } = req.body;
+
+  try {
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin();
+
+    // Fetch existing `invoice_master` and check for changes
+    const requestMaster = new sql.Request(transaction);
+    const existingInvoice = await requestMaster
+      .input('inv_no', sql.Decimal(18, 0), inv_no)
+      .query(`SELECT * FROM invoice_master WHERE inv_no = @inv_no`);
+
+    if (existingInvoice.recordset.length > 0) {
+      const existingRecord = existingInvoice.recordset[0];
+      const fieldsToUpdate = [
+        'salesman_name', 'cust_ref', 'cust_name', 'prv_balance', 'g_amount', 'g_discount',
+        'cash_amount', 'bank_amount', 'bank_cash_amount'
+      ];
+
+      // Check and update fields only if they have changed
+      const updatedFields = fieldsToUpdate.filter(field => existingRecord[field] !== req.body[field]);
+      if (updatedFields.length > 0) {
+        await requestMaster
+          .input('salesman_name', sql.VarChar(250), salesman_name)
+          .input('cust_ref', sql.VarChar(250), cust_ref)
+          .input('cust_name', sql.VarChar(250), cust_name)
+          .input('prv_balance', sql.Decimal(18, 2), prv_balance)
+          .input('g_amount', sql.Decimal(18, 2), g_amount)
+          .input('g_discount', sql.Decimal(18, 2), g_discount)
+          .input('cash_amount', sql.Decimal(18, 2), cash_amount)
+          .input('bank_amount', sql.Decimal(18, 2), bank_amount)
+          .input('bank_cash_amount', sql.Decimal(18, 2), bank_cash_amount)
+          .query(`
+            UPDATE invoice_master
+            SET salesman_name = @salesman_name, cust_ref = @cust_ref, cust_name = @cust_name,
+                prv_balance = @prv_balance, g_amount = @g_amount, g_discount = @g_discount,
+                cash_amount = @cash_amount, bank_amount = @bank_amount, bank_cash_amount = @bank_cash_amount
+            WHERE inv_no = @inv_no
+          `);
+      }
+    }
+
+    // Fetch existing items for the given `inv_no`
+    const requestDetail = new sql.Request(transaction);
+    const existingItems = await requestDetail
+      .input('inv_no', sql.Decimal(18, 0), inv_no)
+      .query(`SELECT * FROM invoice_detail WHERE inv_code = @inv_no`);
+
+    const existingItemsMap = new Map();
+    existingItems.recordset.forEach(item => {
+      existingItemsMap.set(item.product_code, item);
+    });
+
+    const sNoResult = await requestDetail.query(`SELECT ISNULL(MAX(s_no), 0) AS max_s_no FROM invoice_detail WHERE inv_code = @inv_no`);
+    let s_no = sNoResult.recordset[0].max_s_no;
+
+    // Compare incoming items with existing items and update accordingly
+    for (const item of items) {
+      if (existingItemsMap.has(item.product_code)) {
+        const existingItem = existingItemsMap.get(item.product_code);
+        const itemToUpdate = [
+          'qty', 'rate', 'discount', 'product_name', 'i_retail', 'i_cost'
+        ];
+
+        // Check if there are differences in the fields
+        const hasChanges = itemToUpdate.some(field => existingItem[field] !== item[field]);
+
+        if (hasChanges) {
+          await requestDetail
+            .input('inv_code', sql.Decimal(18, 0), inv_code)
+            .input('product_code', sql.Decimal(18, 0), item.product_code)
+            .input('product_name', sql.VarChar(500), item.product_name)
+            .input('qty', sql.Decimal(18, 3), item.qty)
+            .input('rate', sql.Decimal(18, 2), item.rate)
+            .input('discount', sql.Decimal(18, 2), item.discount)
+            .input('i_retail', sql.Decimal(18, 2), item.i_retail)
+            .input('i_cost', sql.Decimal(18, 2), item.i_cost)
+            .query(`
+              UPDATE invoice_detail
+              SET product_name = @product_name, qty = @qty, rate = @rate, discount = @discount,
+                  i_retail = @i_retail, i_cost = @i_cost
+              WHERE inv_code = @inv_code AND product_code = @product_code
+            `);
+        }
+        existingItemsMap.delete(item.product_code); // Mark as processed
+      } else {
+        // Insert new item
+        s_no++;
+        await requestDetail
+        .input('inv_code', sql.Decimal(18, 0), inv_code)
+          .input('branch_id', sql.VarChar(50), branch_G)
+          .input('product_code', sql.Decimal(18, 0), item.product_code)
+          .input('product_name', sql.VarChar(500), item.product_name)
+          .input('qty', sql.Decimal(18, 3), item.qty)
+          .input('rate', sql.Decimal(18, 2), item.rate)
+          .input('discount', sql.Decimal(18, 2), item.discount)
+          .input('s_no', sql.Int, s_no)
+          .query(`
+            INSERT INTO invoice_detail (inv_code, branch_id, status, wk_no, product_code, product_name, qty, rate, discount, s_no)
+            VALUES (@inv_code, @branch_id, 2, 1, @product_code, @product_name, @qty, @rate, @discount, @s_no)
+          `);
+      }
+    }
+
+    // Commit the transaction
+    await transaction.commit();
+    res.json({ success: true, message: 'Invoice modified successfully.' });
+  } catch (error) {
+    console.error('Error modifying invoice:', error);
+    res.status(500).json({ success: false, message: 'Error modifying invoice.' });
   }
 });
 

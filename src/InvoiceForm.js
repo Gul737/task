@@ -58,6 +58,8 @@ function InvoiceForm() {
           total:(item.rate - item.discount) * item.qty,
         }));
         setItems(fetchedProducts);
+        setDummy(fetchedProducts.length);
+        console.log("length"+fetchedProducts.length);
           console.log("Fetched products:", fetchedProducts);
 
         setInvoiceNumber(previousInvoice[0].inv_no);
@@ -67,9 +69,34 @@ function InvoiceForm() {
           freightTotal: previousInvoice[0].freight_amount,
           expenseTotal: previousInvoice[0].exp_amount,
         });
-        setSelectedCustomer(previousInvoice[0].cust_name);
+        setSelectedSalesman({
+          value: previousInvoice[0].salesman_code,
+          label: previousInvoice[0].salesman_name,
+        })
+      
+          setSearchTerm(previousInvoice[0].salesman_name);
+          localStorage.setItem('salesman', previousInvoice[0].salesman_name);
+          setSalesmanCode(previousInvoice[0].salesman_code); // Save salesman_code
+          setSalesman(previousInvoice[0].salesman_name);
+        // setSelectedCustomer(previousInvoice[0].cust_name);
+        setSelectedCustomer({
+          value: previousInvoice[0].cust_code,
+          label: previousInvoice[0].cust_name,
+          // terms: previousInvoice[0].cust_terms,
+          balance: previousInvoice[0].prv_balance 
+        });
+        const inv_type = previousInvoice[0].inv_type;
+        if(inv_type==1){
+          setCustomerTerms("CASH");
+        }
+        else if(inv_type==2){
+          setCustomerTerms("CREDIT");
+        }
+        else{}
+      
+        // setCustomerTerms(previousInvoice[0].cust_terms);
         setSearchCustomer(previousInvoice[0].cust_name);
-        setCustomer(previousInvoice[0]);
+        setCustomer(previousInvoice[0].cust_name);
         setCurrentBalance(previousInvoice[0].prv_balance);
   
         const dateFromDatabase = new Date(previousInvoice[0].inv_date);
@@ -129,7 +156,7 @@ function InvoiceForm() {
         }));
         setItems(fetchedProducts);
         console.log("Fetched products:", fetchedProducts);
-  
+        setDummy(fetchedProducts.length);
         setInvoiceNumber(nextInvoice[0].inv_no);
         setTotals({
           subTotal: nextInvoice[0].g_amount,
@@ -137,11 +164,36 @@ function InvoiceForm() {
           freightTotal: nextInvoice[0].freight_amount,
           expenseTotal: nextInvoice[0].exp_amount,
         });
-        setSelectedCustomer(nextInvoice[0].cust_name);
+        setSelectedSalesman({
+          value: nextInvoice[0].salesman_code,
+          label: nextInvoice[0].salesman_name,
+        })
+      
+          setSearchTerm(nextInvoice[0].salesman_name);
+          localStorage.setItem('salesman', nextInvoice[0].salesman_name);
+          setSalesmanCode(nextInvoice[0].salesman_code); // Save salesman_code
+          setSalesman(nextInvoice[0].salesman_name);
+        setSelectedCustomer({
+          value: nextInvoice[0].cust_code,
+          label: nextInvoice[0].cust_name,
+          // terms: nextInvoice[0].cust_terms,
+          balance: nextInvoice[0].prv_balance 
+        });
+        const inv_type = nextInvoice[0].inv_type;
+        if(inv_type==1){
+          setCustomerTerms("CASH");
+        }
+        else if(inv_type==2){
+          setCustomerTerms("CREDIT");
+        }
+        else{}
+      
+        //setSelectedCustomer(nextInvoice[0].cust_name);
         setSearchCustomer(nextInvoice[0].cust_name);
+        // setCustomerTerms(nextInvoice[0].cust_terms);
         setCustomer(nextInvoice[0]);
         setCurrentBalance(nextInvoice[0].prv_balance);
-  
+      
         const dateFromDatabase = new Date(nextInvoice[0].inv_date);
         const formattedDate = dateFromDatabase.toISOString().slice(0, 10);
         setCurrentDate(formattedDate);
@@ -162,10 +214,12 @@ function InvoiceForm() {
   const [searchCustomer, setSearchCustomer] = useState(localStorage.getItem('searchCustomer') || '');
   const [customerTerms, setCustomerTerms] = useState(localStorage.getItem('customerTerms') || " ");
   const [items, setItems] = useState(JSON.parse(localStorage.getItem('items')) || []);
-  
+const[dummy,setDummy]=useState('');  
   const [totals, setTotals] = useState(JSON.parse(localStorage.getItem('totals')) || { subTotal: 0, discountTotal: '', freightTotal: 0, expenseTotal: 0 });
   const [salesman, setSalesman] = useState(localStorage.getItem('salesman') || '');
   const [customer, setCustomer] = useState(localStorage.getItem('customer') || '');
+ 
+  const [cust_ref, setCust_ref] = useState(localStorage.getItem('cust_ref') || '');
   const [invoiceNumber, setInvoiceNumber] = useState(Number(localStorage.getItem('invoiceNumber')) || 0);
   const [salesmenOptions, setSalesmenOptions] = useState([]);
   const [customersOptions, setCustomersOptions] = useState([]);
@@ -286,6 +340,8 @@ function InvoiceForm() {
     localStorage.setItem('currentBalance', currentBalance);
     localStorage.setItem('cashAmount', cashAmount);
     localStorage.setItem('bankAmount', bankAmount);
+ 
+    localStorage.setItem('cust_ref',cust_ref);
     localStorage.setItem('netTotal', netTotal);
     localStorage.setItem('customerCode', customerCode);
     localStorage.setItem('salesmanCode', salesmanCode);
@@ -361,17 +417,17 @@ const customStyles = {
   }),
 };
   useEffect(() => {
-    if (totals.discountTotal > totals.subTotal) {
-      //alert('Error: Discount Total cannot be greater than Sub Total.');
+    // if (totals.discountTotal > totals.subTotal) {
+    //   //alert('Error: Discount Total cannot be greater than Sub Total.');
       
-      // Focus on the discount input field to prompt correction
-      const discountInput = document.querySelector('input[placeholder="0"][class="form-control"]');
-      if (discountInput) {
-        discountInput.focus();
-      }
-      setTotals({ ...totals, discountTotal: '' });
-      return; // Stop execution if the condition is met
-    }
+    //   // Focus on the discount input field to prompt correction
+    //   const discountInput = document.querySelector('input[placeholder="0"][class="form-control"]');
+    //   if (discountInput) {
+    //     discountInput.focus();
+    //   }
+    //   setTotals({ ...totals, discountTotal: '' });
+    //   return; // Stop execution if the condition is met
+    // }
   
     const calculatedFinal = totals.subTotal - totals.discountTotal + totals.freightTotal + totals.expenseTotal;
     setNetTotal(calculatedFinal);
@@ -507,6 +563,7 @@ else if(cashAmount!=="" ||bankAmount!==""){
       setCurrentBalance('');
       setCashAmount('');
       setBankAmount('');
+      setCust_ref('');
       setNetTotal(0);
       setCustomerCode(0);
       setSalesmanCode(0);
@@ -532,30 +589,20 @@ else if(cashAmount!=="" ||bankAmount!==""){
     const invoiceData = {
       inv_code:invoiceNumber,
       s_no:1,
-      // product_code
-      // product_name
-      // rate
-      //discount
-      //qty
-      //case_qty
-      //i_retail
-      // i_cost
       inv_no:invoiceNumber,
       salesman_name:salesman,
       inv_date: currentDate,
       inv_datetime: currentDateTime,
       cust_name:customer,
       cust_code: customerCode,  
+      cust_ref: cust_ref,
       salesman_code:salesmanCode,
       bank_name:bank,
       g_discount:totals.discountTotal || 0,
-      // customerTerms,
       prv_balance:currentBalance,
-      // items,
       bank_amount: bankAmount ||0,
       bank_cash_amount:cashAmount ||0,
       cash_amount:cashReceive||0,
-      // totals,
       g_amount:netTotal,
       inv_type: inv_type,
       items:items
@@ -610,6 +657,57 @@ else if(cashAmount!=="" ||bankAmount!==""){
     setSelectedItem(null);
     setFixQty(0);
   };
+  const handleModify = () => {
+
+    const inv_type = customerTerms === 'CASH' ? 1 : customerTerms === 'CREDIT' ? 2 : 0;
+  
+
+    const invoiceData = {
+      inv_code:invoiceNumber,
+      inv_no: invoiceNumber,
+      items: items, // Include all necessary fields
+      // s_no:dummy,
+      s_no:1,
+      salesman_name:salesman,
+      inv_date: currentDate,
+      inv_datetime: currentDateTime,
+      cust_name:customer,
+
+      cust_code: customerCode,  
+      cust_ref: cust_ref,
+      salesman_code:salesmanCode,
+      bank_name:bank,
+      g_discount:totals.discountTotal || 0,
+      prv_balance:currentBalance,
+      bank_amount: bankAmount ||0,
+      bank_cash_amount:cashAmount ||0,
+      cash_amount:cashReceive||0,
+      g_amount:netTotal,
+      inv_type: inv_type,
+    };
+    modifyInvoice(invoiceData);
+  };
+  async function modifyInvoice(formData) {
+    try {
+      const response = await fetch('http://localhost:3001/modify-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+  
+      const data = await response.json();
+      if (data.success) {
+        alert('Invoice modified successfully.');
+        // Reset states or perform any needed actions after modification
+      } else {
+        alert('Failed to modify invoice: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Error modifying invoice:', error);
+      alert('Server error.');
+    }
+  }
+  
 
   return (
     <div className="ap_container">
@@ -646,10 +744,10 @@ else if(cashAmount!=="" ||bankAmount!==""){
           <i className="bi bi-list-ol text-white px-2"></i> List
         </button>
         
-        <button className="btn dark-blue text-white">
+        <button className="btn dark-blue text-white" onClick={handleModify}>
           <i className="bi bi-pencil-square text-white px-2"></i> Modify
         </button>
-        <button className="btn btn-info text-white">
+        <button className="btn btn-info text-white" onClick={() => window.print()}>
           <i className="bi bi-printer px-2 text-white"></i> Print
         </button>
         <button className="btn btn-success" onClick={handleSave}>
@@ -664,18 +762,27 @@ else if(cashAmount!=="" ||bankAmount!==""){
       <div>
 <div>
   {/* First Row */}
-  <div className="row ">  {/* Adjusted distance */}
-  <div className="col-md-4 d-flex position-relative">
+  <div className="row mb-3 d-flex gap-2 align-items-center">  {/* Adjusted distance */}
+  <div className="col-md-5 d-flex gap-2 align-items-center">
   <label className="text-nowrap bold">INV NO</label>
   <input
     type="text"
-    className="form-control mx-5"
+    className="form-control mx-6 ms-5"
     value={invoiceNumber}
     onChange={(e) => setInvoiceNumber(e.target.value)}
   />
 </div>
+<div className="col-md-5 d-flex gap-2 align-items-center">
+      <label className="text-nowrap fw-bold" style={{ minWidth: "100px" }}>Invoice Date</label>
+      <input
+        type="date"
+        className="form-control"
+        value={currentDate}
+        onChange={(e) => setCurrentDate(e.target.value)}
+      />
+    </div>
   </div>
-  <hr className="my-5"/>
+  <hr className="my-4"/>
   <div className="row mb-3 d-flex gap-2 align-items-center">
      <div className="col-md-5 d-flex gap-2 align-items-center">
           <label className="text-nowrap fw-bold" style={{ minWidth: "100px" }}>Salesman</label>
@@ -695,12 +802,14 @@ else if(cashAmount!=="" ||bankAmount!==""){
         </div>
     {/* Invoice Date Field */}
     <div className="col-md-5 d-flex gap-2 align-items-center">
-      <label className="text-nowrap fw-bold" style={{ minWidth: "100px" }}>Invoice Date</label>
+      <label className="text-nowrap fw-bold" style={{ minWidth: "100px" }}>Cust Ref</label>
       <input
-        type="date"
+        type="text"
         className="form-control"
-        value={currentDate}
-        onChange={(e) => setCurrentDate(e.target.value)}
+        value={cust_ref}
+        onChange={(e)=>setCust_ref(e.target.value)}
+        // value={currentDate}
+        // onChange={(e) => setCurrentDate(e.target.value)}
       />
     </div>
   </div>
@@ -746,7 +855,7 @@ else if(cashAmount!=="" ||bankAmount!==""){
           <p className="text-muted">Previous Balance: {currentBalance}</p>
         </div>
       )}
-      <hr className="my-5 nextTask"/>
+      <hr className="my-3 nextTask"/>
 <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
   <thead>
     <tr style={{ backgroundColor: 'purple', color: 'white', textAlign: 'center' }}>
@@ -890,7 +999,7 @@ else if(cashAmount!=="" ||bankAmount!==""){
         </div>
       {/* Items Table */}
       {items.length > 0 && (
-      <table className="mt-5">
+      <table className="mt-4">
       <thead>
 
           <tr >
