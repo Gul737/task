@@ -57,6 +57,7 @@ function InvoiceForm() {
           i_retail: item.i_retail,
           total:(item.rate - item.discount) * item.qty,
         }));
+     
         setItems(fetchedProducts);
         setDummy(fetchedProducts.length);
         console.log("length"+fetchedProducts.length);
@@ -69,6 +70,8 @@ function InvoiceForm() {
           freightTotal: previousInvoice[0].freight_amount,
           expenseTotal: previousInvoice[0].exp_amount,
         });
+        
+        //setNetTotal(previousInvoice[0].g_amount);
         setSelectedSalesman({
           value: previousInvoice[0].salesman_code,
           label: previousInvoice[0].salesman_name,
@@ -104,6 +107,13 @@ function InvoiceForm() {
         setCurrentDate(formattedDate);
         setCurrentDateTime(previousInvoice[0].inv_datetime);
         setBankAmount(previousInvoice[0].bank_amount);
+        setCashAmount(previousInvoice[0].bank_cash_amount);
+       
+        
+       setSelectedBank( previousInvoice[0].bank_name)
+        setCashReceive(previousInvoice[0].cash_amount);
+        setCust_ref(previousInvoice[0].cust_ref);
+      
       }
     } catch (error) {
       console.error('Error fetching previous invoice:', error);
@@ -159,11 +169,13 @@ function InvoiceForm() {
         setDummy(fetchedProducts.length);
         setInvoiceNumber(nextInvoice[0].inv_no);
         setTotals({
-          subTotal: nextInvoice[0].g_amount,
+          //netTotal: nextInvoice[0].g_amount,
+           subTotal: nextInvoice[0].g_amount,
           discountTotal: nextInvoice[0].g_discount,
           freightTotal: nextInvoice[0].freight_amount,
           expenseTotal: nextInvoice[0].exp_amount,
         });
+        //setNetTotal(nextInvoice[0].g_amount);
         setSelectedSalesman({
           value: nextInvoice[0].salesman_code,
           label: nextInvoice[0].salesman_name,
@@ -199,6 +211,10 @@ function InvoiceForm() {
         setCurrentDate(formattedDate);
         setCurrentDateTime(nextInvoice[0].inv_datetime);
         setBankAmount(nextInvoice[0].bank_amount);
+        setCashAmount(nextInvoice[0].bank_cash_amount);
+        setSelectedBank( nextInvoice[0].bank_name)
+        setCashReceive(nextInvoice[0].cash_amount);
+        setCust_ref(nextInvoice[0].cust_ref);
       }
     } catch (error) {
       console.error('Error fetching next invoice:', error);
@@ -300,23 +316,40 @@ const[dummy,setDummy]=useState('');
       : { product_name: '', product_code:'',qty: '', rate: '', discount: '', i_cost: '', i_retail: '' ,total:''};
   });
   
+  const handleBankSelectionChange = (selectedOption) => {
+    if (selectedOption?.value) {
+      setSelectedBank(selectedOption.value);
+      setBank(selectedOption.value);
+    } else {
+      setSelectedBank('');
+      setBank('');
+    }
+  };
+  
   
     // const handleBankSelectionChange = (selectedOption) => {
-    //   setSelectedBank(selectedOption ? selectedOption.value : '');
-    //   setBank(selectedOption.value);
+    //   if (selectedOption && selectedOption.value) {
+    //     setSelectedBank(selectedOption.value);
+    //     setBank(selectedOption.value);
+    //     console.log(bank)
+    //   } else {
+    //     setSelectedBank('');  // Default to empty if no selection
+    //     setBank('');           // Reset bank if no selection
+    //   }
     // };
-    const handleBankSelectionChange = (selectedOption) => {
-      if (selectedOption && selectedOption.value) {
-        setSelectedBank(selectedOption.value);
-        setBank(selectedOption.value);
-        console.log(bank)
-      } else {
-        setSelectedBank('');  // Default to empty if no selection
-        setBank('');           // Reset bank if no selection
-      }
-    };
     
-  
+    // const handleBankSelectionChange = (selectedOption) => {
+    //   if (selectedOption && selectedOption.value) {
+    //     setSelectedBank(selectedOption.value);
+    //     setBank(selectedOption.value);
+    //     console.log("Selected Bank: ", selectedOption.value);
+    //   } else {
+    //     setSelectedBank('');  // Default to empty if no selection
+    //     setBank('');           // Reset bank if no selection
+    //     console.log("Bank reset");
+    //   }
+    // };
+    
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10); 
     setCurrentDate(today);
@@ -603,7 +636,8 @@ else if(cashAmount!=="" ||bankAmount!==""){
       bank_amount: bankAmount ||0,
       bank_cash_amount:cashAmount ||0,
       cash_amount:cashReceive||0,
-      g_amount:netTotal,
+      //g_amount:netTotal,
+      g_amount:totals.subTotal || 0,
       inv_type: inv_type,
       items:items
     };
@@ -682,7 +716,8 @@ else if(cashAmount!=="" ||bankAmount!==""){
       bank_amount: bankAmount ||0,
       bank_cash_amount:cashAmount ||0,
       cash_amount:cashReceive||0,
-      g_amount:netTotal,
+      // g_amount:netTotal,
+      g_amount:totals.subTotal,
       inv_type: inv_type,
     };
     modifyInvoice(invoiceData);
@@ -1051,7 +1086,7 @@ else if(cashAmount!=="" ||bankAmount!==""){
       <label className="text-wrap fw-bold txt-dec" style={{ minWidth: "100px" }}>Bank Name</label>
       <div className="position-relative w-100">
       <Select
-        value={bankOptions.find(option => option.value === selectedBank)||bank}
+        value={bankOptions.find(option => option.value === selectedBank)}
         onChange={handleBankSelectionChange}
         options={bankOptions}
         placeholder="Select Bank"

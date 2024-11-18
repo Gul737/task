@@ -514,7 +514,118 @@ app.post('/modify-invoice', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error modifying invoice.' });
   }
 });
+app.get('/max-cust-code', async (req, res) => {
+  try {
+    const result = await sql.query('SELECT MAX(cust_code) AS max_cust_code FROM customer_info');
+    let maxCustCode = result.recordset[0].max_cust_code;
 
+    // Increment maxCustCode by 1 if it exists, otherwise set it to 1
+    maxCustCode = maxCustCode ? maxCustCode + 1 : 1;
+
+    res.json({ maxCustCode });
+    // res.json({ maxCustCode: result.recordset[0].max_cust_code });
+  } catch (error) {
+    console.error('Error fetching max cust_code:', error);
+    res.status(500).send('Server error');
+  }
+});
+
+
+  // Route to insert data into `customer_info`
+  app.post('/add-customer', async (req, res) => {
+    const {
+      cust_code,
+      cust_name,
+      cust_ph_no,
+      cust_mob_no,
+      cust_address1,
+      cust_address2,
+      cust_email,
+      cust_cnic,
+      cust_area,
+      cust_city,
+      cust_country,
+      remarks,
+      cust_type,
+      cust_terms,
+      cust_disc_per,
+      price_level,
+      cust_credit_limit,
+      cust_credit_days,
+      branch_id,
+      salesman_code,
+      cust_fax,
+      cust_cmp_name,
+      cust_ntn_no,
+      cust_sales_tax_reg,
+      cust_current_bal,
+      target,
+      commission,
+      last_inv_type,
+      cust_dng_type,
+      cust_joining_date,
+      master_code,
+
+    } = req.body;
+
+    try {
+      const request = pool.request();
+      
+      // Add parameters to the query
+      request.input('cust_code', sql.Decimal, cust_code);
+      request.input('cust_name', sql.VarChar(50), cust_name);
+      request.input('cust_ph_no', sql.VarChar(50), cust_ph_no);
+      request.input('cust_mob_no', sql.VarChar(50), cust_mob_no);
+      request.input('cust_address1', sql.VarChar(50), cust_address1);
+      request.input('cust_address2', sql.VarChar(50), cust_address2);
+
+      request.input('cust_email', sql.VarChar(50), cust_email);
+      request.input('cust_cnic', sql.VarChar(50), cust_cnic);
+      request.input('cust_area', sql.VarChar(50), cust_area);
+      request.input('cust_city', sql.VarChar(50), cust_city);
+      request.input('cust_country', sql.VarChar(50), cust_country);
+      request.input('remarks', sql.VarChar(50), remarks);
+      request.input('cust_type', sql.VarChar(50), cust_type);
+      request.input('cust_terms', sql.VarChar(50), cust_terms);
+      request.input('cust_disc_per', sql.Decimal, cust_disc_per);
+      request.input('price_level', sql.Int, price_level);
+      request.input('cust_credit_limit', sql.Decimal, cust_credit_limit);
+      request.input('cust_credit_days', sql.Int, cust_credit_days);
+      request.input('branch_id', sql.VarChar(50), branch_G);
+      request.input('salesman_code', sql.Decimal, salesman_code);
+      request.input('cust_fax', sql.VarChar(50), cust_fax);
+      request.input('cust_cmp_name', sql.VarChar(50), cust_cmp_name);
+      request.input('cust_ntn_no', sql.VarChar(50), cust_ntn_no);
+      request.input('cust_sales_tax_reg', sql.VarChar(50), cust_sales_tax_reg);
+      request.input('cust_current_bal', sql.Decimal, cust_current_bal);
+      request.input('target', sql.Decimal, target);
+      request.input('commission', sql.Decimal, commission);
+      request.input('last_inv_type', sql.VarChar(50), last_inv_type);
+      request.input('cust_dng_type', sql.VarChar(50), cust_dng_type);
+      request.input('master_code', sql.Int,master_code);
+      request.input('cust_joining_date', sql.DateTime, cust_joining_date)
+      // Execute the query to insert the customer data
+      await request.query(`
+        INSERT INTO customer_info (
+          cust_code, cust_name, cust_ph_no, cust_mob_no, cust_address1, cust_address2, cust_email, cust_cnic, 
+          cust_area, cust_city, cust_country, remarks, cust_type, cust_terms, cust_disc_per, price_level, 
+          cust_credit_limit, cust_credit_days, branch_id, salesman_code, cust_fax, cust_cmp_name, cust_ntn_no, 
+          cust_sales_tax_reg, cust_current_bal, target, commission, last_inv_type, cust_dng_type,cust_joining_date,master_code
+        )
+        VALUES (
+          @cust_code, @cust_name, @cust_ph_no, @cust_mob_no, @cust_address1, @cust_address2, @cust_email, @cust_cnic, 
+          @cust_area, @cust_city, @cust_country, @remarks, @cust_type, @cust_terms, @cust_disc_per, @price_level, 
+          @cust_credit_limit, @cust_credit_days, @branch_id, @salesman_code, @cust_fax, @cust_cmp_name, @cust_ntn_no, 
+          @cust_sales_tax_reg, @cust_current_bal, @target, @commission, @last_inv_type, @cust_dng_type,cust_joining_date,401
+        )
+      `);
+
+      res.status(201).send('Customer added successfully');
+    } catch (error) {
+      console.error('Error adding customer:', error);
+      res.status(500).send('Error adding customer');
+    }
+  });
   // Start the server
   app.listen(3001, () => {
     console.log('Backend server is running on port 3001');

@@ -260,7 +260,7 @@ width: 100% !important;
 .container-fluid{
   padding: 0% !important;
 }
-.bg-l{
+.bg-l,.light{
   /* background: url("/public/assets/bk -inv.png") center center / cover no-repeat fixed !important;
   background-attachment: fixed; */
   /* margin: 0%;
@@ -323,4 +323,7 @@ width: 100% !important;
 color: #98198e;
 font-weight: bold;
 font-size:medium;
+}
+.bg-yellow{
+  background-color: yellow !important;
 }
