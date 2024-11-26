@@ -216,8 +216,41 @@ function InvoiceForm() {
         setCashReceive(nextInvoice[0].cash_amount);
         setCust_ref(nextInvoice[0].cust_ref);
       }
+      else{
+        window.location.reload();
+        localStorage.clear();
+        //setCurrentDate('');
+   setItemDescriptions([]);
+   setSearchItem('');
+   setSearchCustomer('');
+   setCustomerTerms('');
+   setItems([]);
+   setTotals({ subTotal: 0, discountTotal: '', freightTotal: 0, expenseTotal: 0 });
+   setSalesman('');
+   setSelectedCustomer('');
+   setCustomer('');
+   setInvoiceNumber('');
+   setSalesmenOptions([]);
+   setCustomersOptions([]);
+   setCurrentBalance('');
+   setCashAmount('');
+   setBankAmount('');
+   setCust_ref('');
+   setNetTotal(0);
+   setCustomerCode(0);
+   setSalesmanCode(0);
+   setNewItem({ product_name: '', product_code:'',qty: 0, rate: 0, discount: 0, i_cost: 0, i_retail: 0 ,total:0});
+   setSearchTerm('');
+   setBank('');
+   // setBankOptions([]);
+   setError('');
+   setCashReceive('');
+   setCashRemaining(0);
+         
+      }
     } catch (error) {
       console.error('Error fetching next invoice:', error);
+
     }
   };
   
@@ -580,6 +613,7 @@ else if(cashAmount!=="" ||bankAmount!==""){
         if (data.success) {
           alert(data.message);
           localStorage.clear();
+          window.location.reload();
            //setCurrentDate('');
       setItemDescriptions([]);
       setSearchItem('');
@@ -639,7 +673,7 @@ else if(cashAmount!=="" ||bankAmount!==""){
       //g_amount:netTotal,
       g_amount:totals.subTotal || 0,
       inv_type: inv_type,
-      items:items
+      items: items
     };
     saveInvoice(invoiceData);
   localStorage.clear();
@@ -733,6 +767,9 @@ else if(cashAmount!=="" ||bankAmount!==""){
       const data = await response.json();
       if (data.success) {
         alert('Invoice modified successfully.');
+        localStorage.clear(); 
+   
+        window.location.reload();
         // Reset states or perform any needed actions after modification
       } else {
         alert('Failed to modify invoice: ' + data.message);
@@ -1149,15 +1186,15 @@ placeholder='0'
   <div className="row my-3 py-3 box" style={{ width: "45%", border: "2px solid #98198e", borderRadius: "20px", padding: "0 20px" }}>
     {/* Totals */}
     <div className="d-flex justify-content-end">
-      <table className="mt-4" style={{ backgroundColor: '#e0e0e0', borderCollapse: 'collapse', width: '100%' }}>
+      <table className="mt-4" style={{ backgroundColor: '#e0e0e0', borderCollapse: 'collapse', width: '100%'}}>
         <tbody>
-          <tr>
-            <td className="txt-dec">Sub Total:</td>
-            <td><div className="bold">{totals.subTotal}</div></td>
+          <tr >
+            <td style={{ textAlign: 'left' }}className="txt-dec">Sub Total:</td>
+            <td style={{ textAlign: 'left' }}><div className="bold">{totals.subTotal}</div></td>
           </tr>
           <tr>
-            <td className="txt-dec">Discount Total:</td>
-            <td>
+            <td style={{ textAlign: 'left' }} className="txt-dec">Discount Total:</td>
+            <td style={{ textAlign: 'left' }}>
             <input
           type="number"
           // style={{width:'5vw'}}
@@ -1176,13 +1213,13 @@ placeholder='0'
             <td><div className="bold">{totals.freightTotal}</div></td>
           </tr> */}
           <tr>
-            <td className="txt-dec">Expense Total:</td>
+            <td style={{ textAlign: 'left' }} className="txt-dec">Expense Total:</td>
             <td><div className="bold">{totals.expenseTotal}</div></td>
           </tr>
           <br/>
           
           <tr style={{ background: "#800080", color: "white" }}>
-            <td><strong>Net Total:</strong></td>
+            <td style={{ textAlign: 'left' }}><strong>Net Total:</strong></td>
             <td ><div><strong>{netTotal}</strong></div></td>
             <br/>
          

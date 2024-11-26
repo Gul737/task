@@ -6,7 +6,8 @@ const cookieParser = require('cookie-parser');
 const app = express();
 app.use(cookieParser());
 app.use(cors());
-app.use(express.json()); // Add to parse JSON bodies
+//app.use(express.json());
+app.use(express.json({ limit: '50mb' })); 
 app.use(bodyParser.json());
  let branch_G;
 // SQL Server configuration
@@ -38,7 +39,7 @@ sql.connect(config).then((pool) => {
 
   // API to handle login
   app.post('/login', async (req, res) => {
-    console.log(req.body); 
+    //console.log(req.body); 
     // const { login_name, password,branchCode} = req.body;
     const { login_name, password,branch_id} = req.body;
     try {
@@ -57,7 +58,7 @@ sql.connect(config).then((pool) => {
     AND login_info.password = @password
     AND employee_info.branch_id = @branch_id
 `);
-        console.log('Query executed successfully:', result); // Log result
+        console.log('login Query executed successfully'); // Log result
       if (result.recordset.length > 0) {
         // Update current_login to 'yes'
         await pool.request()
@@ -79,7 +80,7 @@ app.get('/set', (req, res) => {
       return res.status(400).send('Branch Code not found');
   }
 
-  console.log("Branch Code is received on server side:", branchCode);
+  //console.log("Branch Code is received on server side:", branchCode);
 });
 
 
@@ -89,11 +90,11 @@ app.post('/invoice', async (req, res) => {
     .input('branch_id', sql.VarChar, branch_G)
     .query("SELECT MAX(inv_no) AS inv FROM invoice_master WHERE status = 2 and wk_no=1 and branch_id = @branch_id");
 
-    console.log('SQL Query Result:', result.recordset);
+    //console.log('SQL Query Result:', result.recordset);
     let newInvoiceNumber = (result.recordset[0]?.inv === null) ? 1 : result.recordset[0].inv + 1;
 
     res.json({ invoice_number: newInvoiceNumber });
-    console.log(newInvoiceNumber);
+    //console.log(newInvoiceNumber);
   } catch (err) {
     console.error('Query Error: ', err);
     res.status(500).json({ error: err.message });
@@ -122,7 +123,7 @@ app.get('/branch_info', async (req, res) => {
       const result = await pool.request()
   .input('branch_id', sql.VarChar, branch_G)
   .query("SELECT emp_name,emp_code FROM employee_info WHERE branch_id = @branch_id");
-              console.log("Salesmen Field Done: " + JSON.stringify(result.recordset, null, 2));
+            //  console.log("Salesmen Field Done: " + JSON.stringify(result.recordset, null, 2));
 
    res.json(result.recordset);
      } catch (err) {
@@ -130,6 +131,21 @@ app.get('/branch_info', async (req, res) => {
        res.status(500).send(err.message);
      }
    });
+   app.get('/salesmenByBranch', async (req, res) => {
+    const { branch_code } = req.query; // Get branch_code from query params
+    try {
+      const pool = await sql.connect(config);
+      const result = await pool.request()
+        .input('branch_code', sql.VarChar, branch_code) // Pass branch_code to the query
+        .query('SELECT emp_code, emp_name FROM employee_info WHERE branch_id = @branch_code'); // Filter by branch_code
+      
+      res.json(result.recordset); // Return filtered data
+    } catch (err) {
+      console.error('Query Error:', err);
+      res.status(500).send(err.message);
+    }
+  });
+  
 //    app.get('/bank', async (req, res) => {
 //     try {
 //      const result = await pool.request()
@@ -150,7 +166,7 @@ app.get('/branch_info', async (req, res) => {
     const result = await pool.request()
     .input('branch_id', sql.VarChar, branch_G)
     .query("SELECT cust_name,cust_code,cust_current_bal, cust_terms FROM customer_info where cust_active=1 and branch_id = @branch_id");
-      console.log("customer Field Set"+ JSON.stringify(result.recordset, null, 2));
+      //console.log("customer Field Set"+ JSON.stringify(result.recordset, null, 2));
        res.json(result.recordset);
      } catch (err) {
        console.error('Query Error: ', err);
@@ -462,6 +478,7 @@ app.post('/modify-invoice', async (req, res) => {
     for (const item of items) {
       if (existingItemsMap.has(item.product_code)) {
         const existingItem = existingItemsMap.get(item.product_code);
+     
         const itemToUpdate = [
           'qty', 'rate', 'discount', 'product_name', 'i_retail', 'i_cost'
         ];
@@ -479,10 +496,12 @@ app.post('/modify-invoice', async (req, res) => {
             .input('discount', sql.Decimal(18, 2), item.discount)
             .input('i_retail', sql.Decimal(18, 2), item.i_retail)
             .input('i_cost', sql.Decimal(18, 2), item.i_cost)
+            .input('case_qty', sql.Decimal(18, 0), item.case_qty || 1) // Optional field
+          
             .query(`
               UPDATE invoice_detail
               SET product_name = @product_name, qty = @qty, rate = @rate, discount = @discount,
-                  i_retail = @i_retail, i_cost = @i_cost
+                  i_retail = @i_retail, i_cost = @i_cost,case_qty=1
               WHERE inv_code = @inv_code AND product_code = @product_code
             `);
         }
@@ -491,21 +510,33 @@ app.post('/modify-invoice', async (req, res) => {
         // Insert new item
         s_no++;
         await requestDetail
-        .input('inv_code', sql.Decimal(18, 0), inv_code)
+        // .input('inv_code', sql.Decimal(18, 0), inv_code)
+        .input('inv_coded', sql.Decimal(18, 0), inv_code)
           .input('branch_id', sql.VarChar(50), branch_G)
-          .input('product_code', sql.Decimal(18, 0), item.product_code)
+          .input('product_coded', sql.Decimal(18, 0), item.product_code)
           .input('product_name', sql.VarChar(500), item.product_name)
           .input('qty', sql.Decimal(18, 3), item.qty)
           .input('rate', sql.Decimal(18, 2), item.rate)
           .input('discount', sql.Decimal(18, 2), item.discount)
           .input('s_no', sql.Int, s_no)
+          .input('i_retail', sql.Decimal(18, 2), item.i_retail)
+          .input('i_cost', sql.Decimal(18, 2), item.i_cost)
+          .input('case_qty', sql.Decimal(18, 0), item.case_qty || 1)
           .query(`
-            INSERT INTO invoice_detail (inv_code, branch_id, status, wk_no, product_code, product_name, qty, rate, discount, s_no)
-            VALUES (@inv_code, @branch_id, 2, 1, @product_code, @product_name, @qty, @rate, @discount, @s_no)
+            INSERT INTO invoice_detail (inv_code, branch_id, status, wk_no, product_code, product_name, qty, rate, discount, s_no,i_retail,i_cost,case_qty)
+            VALUES (@inv_coded, @branch_id, 2, 1, @product_coded, @product_name, @qty, @rate, @discount, @s_no,@i_retail,@i_cost,1)
           `);
       }
     }
-
+       for (const [product_code, item] of existingItemsMap) {
+        await requestDetail.input('delete_inv_code', sql.Decimal(18, 0), inv_code) // Unique parameter for inv_code
+        .input('delete_product_code', sql.Decimal(18, 0), product_code) // Unique parameter for product_code
+        .query('DELETE FROM invoice_detail WHERE inv_code = @delete_inv_code AND product_code = @delete_product_code');
+        // .input('inv_code', sql.Decimal(18, 0), inv_code)
+        // .input('product_code', sql.Decimal(18, 0), product_code) // Bind product_code
+        // .query('DELETE FROM invoice_detail WHERE inv_code = @inv_code AND product_code = @product_code');
+      }
+  
     // Commit the transaction
     await transaction.commit();
     res.json({ success: true, message: 'Invoice modified successfully.' });
@@ -529,7 +560,67 @@ app.get('/max-cust-code', async (req, res) => {
     res.status(500).send('Server error');
   }
 });
+app.get('/api/areas', async (req, res) => {
+  const request = new sql.Request();
+//request.input('branch_id', sql.VarChar, branch_G); // Pass branch_G as branch_id parameter
 
+// Your SQL query
+//const query = `SELECT area_name FROM tbl_area WHERE branch_id = @branch_id`;
+const query = `SELECT area_name FROM tbl_area`;
+
+try {
+  const result = await request.query(query);
+  res.json(result.recordset);
+  // const [areas] = await request.query(query);
+  // res.json(areas);
+} catch (err) {
+  console.error('Error executing query:', err);
+}
+});
+
+// Route to get cities based on branch_id
+app.get('/api/cities', async (req, res) => {
+  const request = new sql.Request();
+//request.input('branch_id', sql.VarChar, branch_G); // Pass branch_G as branch_id parameter
+
+// Your SQL query
+// const query = `SELECT city_name FROM tbl_city WHERE branch_id = @branch_id`;
+const query = `SELECT city_name FROM tbl_city`;
+
+try {
+  // const[cities] = await request.query(query);
+  // res.json(cities);
+  const result = await request.query(query);
+  res.json(result.recordset);
+}
+
+    catch (error) {
+    console.error('Error fetching cities:', error);
+    res.status(500).json({ error: 'Failed to fetch cities' });
+  }
+});
+
+// Route to get countries based on branch_id
+app.get('/api/countries', async (req, res) => {
+  
+  const request = new sql.Request();
+  //request.input('branch_id', sql.VarChar, branch_G); // Pass branch_G as branch_id parameter
+  
+  // Your SQL query
+  // const query = `SELECT country_name FROM tbl_country WHERE branch_id = @branch_id`;
+  const query = `SELECT country_name FROM tbl_country`;
+  
+  try {
+    const result = await request.query(query);
+    res.json(result.recordset);
+    // const [countries] = await request.query(query);
+    // res.json(countries);
+  }
+  catch (error) {
+    console.error('Error fetching countries:', error);
+    res.status(500).json({ error: 'Failed to fetch countries' });
+  }
+});
 
   // Route to insert data into `customer_info`
   app.post('/add-customer', async (req, res) => {
@@ -565,6 +656,7 @@ app.get('/max-cust-code', async (req, res) => {
       cust_dng_type,
       cust_joining_date,
       master_code,
+      search_code
 
     } = req.body;
 
@@ -587,11 +679,11 @@ app.get('/max-cust-code', async (req, res) => {
       request.input('remarks', sql.VarChar(50), remarks);
       request.input('cust_type', sql.VarChar(50), cust_type);
       request.input('cust_terms', sql.VarChar(50), cust_terms);
-      request.input('cust_disc_per', sql.Decimal, cust_disc_per);
-      request.input('price_level', sql.Int, price_level);
-      request.input('cust_credit_limit', sql.Decimal, cust_credit_limit);
-      request.input('cust_credit_days', sql.Int, cust_credit_days);
-      request.input('branch_id', sql.VarChar(50), branch_G);
+      request.input('cust_disc_per', sql.Decimal, cust_disc_per ||0);
+      request.input('price_level', sql.Int, price_level ||0);
+      request.input('cust_credit_limit', sql.Decimal,cust_credit_limit||0 );
+      request.input('cust_credit_days', sql.Int, cust_credit_days ||0);
+      request.input('branch_id', sql.VarChar(50), branch_id);
       request.input('salesman_code', sql.Decimal, salesman_code);
       request.input('cust_fax', sql.VarChar(50), cust_fax);
       request.input('cust_cmp_name', sql.VarChar(50), cust_cmp_name);
@@ -603,20 +695,22 @@ app.get('/max-cust-code', async (req, res) => {
       request.input('last_inv_type', sql.VarChar(50), last_inv_type);
       request.input('cust_dng_type', sql.VarChar(50), cust_dng_type);
       request.input('master_code', sql.Int,master_code);
-      request.input('cust_joining_date', sql.DateTime, cust_joining_date)
+      request.input('cust_joining_date', sql.DateTime,  cust_joining_date)
+      request.input('search_code', sql.VarChar(50),  search_code);
+     
       // Execute the query to insert the customer data
       await request.query(`
         INSERT INTO customer_info (
           cust_code, cust_name, cust_ph_no, cust_mob_no, cust_address1, cust_address2, cust_email, cust_cnic, 
           cust_area, cust_city, cust_country, remarks, cust_type, cust_terms, cust_disc_per, price_level, 
           cust_credit_limit, cust_credit_days, branch_id, salesman_code, cust_fax, cust_cmp_name, cust_ntn_no, 
-          cust_sales_tax_reg, cust_current_bal, target, commission, last_inv_type, cust_dng_type,cust_joining_date,master_code
+          cust_sales_tax_reg, cust_current_bal, target, commission, last_inv_type, cust_dng_type,master_code,cust_joining_date,search_code
         )
         VALUES (
           @cust_code, @cust_name, @cust_ph_no, @cust_mob_no, @cust_address1, @cust_address2, @cust_email, @cust_cnic, 
           @cust_area, @cust_city, @cust_country, @remarks, @cust_type, @cust_terms, @cust_disc_per, @price_level, 
           @cust_credit_limit, @cust_credit_days, @branch_id, @salesman_code, @cust_fax, @cust_cmp_name, @cust_ntn_no, 
-          @cust_sales_tax_reg, @cust_current_bal, @target, @commission, @last_inv_type, @cust_dng_type,cust_joining_date,401
+          @cust_sales_tax_reg, @cust_current_bal, @target, @commission, @last_inv_type, @cust_dng_type,401,@cust_joining_date,@search_code
         )
       `);
 
@@ -626,6 +720,620 @@ app.get('/max-cust-code', async (req, res) => {
       res.status(500).send('Error adding customer');
     }
   });
+  app.get('/api/get-max-product-code', async (req, res) => {
+
+    try {
+      const result = await pool.request()
+  .query("SELECT MAX(product_code) AS maxCode FROM item_description");
+  //console.log("fetched pro"+ JSON.stringify(result.recordset, null, 2))
+         const maxCode = result.recordset[0].maxCode;
+       res.json({ maxCode: maxCode ? maxCode : 0 });
+     } catch (err) {
+       console.error('Query Error: ', err);
+       res.status(500).send(err.message);
+     }
+
+  });
+  
+  // API to fetch bin locations
+  app.get('/api/get-bin-locations', async (req, res) => {
+
+    try {
+      const result = await pool.request()
+  .query("SELECT bin_name FROM item_bin_loc");
+  //console.log("fetched bin"+ JSON.stringify(result.recordset, null, 2))
+   res.json(result.recordset);
+     } catch (err) {
+       console.error('Query Error: ', err);
+       res.status(500).send(err.message);
+     }
+  });
+  
+  // API to fetch categories
+  app.get('/api/get-categories', async (req, res) => {
+    try {
+      const result = await pool.request()
+  .query("select category_name,category_code from item_category");
+  //console.log("fetched cat"+ JSON.stringify(result.recordset, null, 2))
+   res.json(result.recordset);
+     } catch (err) {
+       console.error('Query Error: ', err);
+       res.status(500).send(err.message);
+     }
+ 
+  });
+  
+  // API to fetch item types
+  app.get('/api/get-item-types', async (req, res) => {
+    try {
+      const result = await pool.request()
+  .query("select sub_cate_name from item_sub_category");
+  //console.log("fetched sub-cat"+ JSON.stringify(result.recordset, null, 2))
+   res.json(result.recordset);
+     } catch (err) {
+       console.error('Query Error: ', err);
+       res.status(500).send(err.message);
+     }
+  });
+  
+  // API to fetch product groups
+  app.get('/api/get-product-groups', async (req, res) => {
+    try {
+      const result = await pool.request()
+  .query("select group_name,group_code from item_group");
+  //console.log("fetched grp"+ JSON.stringify(result.recordset, null, 2))
+   res.json(result.recordset);
+     } catch (err) {
+       console.error('Query Error: ', err);
+       res.status(500).send(err.message);
+     }
+  });
+  
+  // API to fetch units of measure (UOM)
+  app.get('/api/get-uoms', async (req, res) => {
+    try {
+      const result = await pool.request()
+  .query("select uom_name from item_uom");
+  //console.log("fetched uom"+ JSON.stringify(result.recordset, null, 2))
+   res.json(result.recordset);
+     } catch (err) {
+       console.error('Query Error: ', err);
+       res.status(500).send(err.message);
+     }
+  });
+  app.post("/api/save-product", async (req, res) => {
+    const { 
+      product_code, picture, product_desc, cost, retail, avg_cost, qty_inhand, 
+      case_qty, category_code, po_type, sale_tax, min_level, max_level, 
+      bin_location, item_disc, branch_id, joining_date, brand_code, sub_category, 
+      uom, design_model, active, make, barcode, group_code, last_sale_rate, 
+      last_sale_qty, last_sale_date, last_pur_rate, last_pur_qty, last_pur_date, 
+      qty_inhand000, qty_inhand001, qty_inhand002, qty_inhand003, qty_inhand004, 
+      qty_inahnd005, qty_inhand006, qty_inahnd007, qty_inhand008, qty_inhand009, 
+      price_level1, price_level2, price_level3, price_level4, price_level5, 
+      tax_code, retail_min, retail_max, urdu_desc, type_print, item_brand
+    } = req.body; // Destructure all fields from request body
+  
+    try {
+      const productCode = product_code || 0; // Default to 0 if no product code is provided
+       const barCode=barcode || '';
+        //console.log(picture)
+       let imageBuffer = null;
+       if (picture) {
+         imageBuffer = Buffer.from(picture, "base64");
+       } 
+     
+      const request = pool.request();
+      request.input('product_code', sql.Decimal, productCode);
+      request.input('product_desc', sql.VarChar, product_desc);
+      request.input('cost', sql.Decimal, cost);
+      request.input('retail', sql.Decimal, retail);
+      //request.input('avg_cost', sql.Decimal, avg_cost);
+      request.input('qty_inhand', sql.Decimal, qty_inhand);
+      request.input('case_qty', sql.Decimal, case_qty)||1;
+      request.input('category_code', sql.Decimal, category_code) || 0;
+      request.input('sale_tax', sql.Decimal, sale_tax);
+      request.input('bin_location', sql.VarChar, bin_location);
+      request.input('item_disc', sql.Decimal, item_disc);
+      request.input('branch_id', sql.VarChar, branch_id);
+      request.input('joining_date', sql.DateTime, joining_date);
+      request.input('brand_code', sql.Decimal, brand_code);
+      request.input('sub_category', sql.VarChar, sub_category);
+      request.input('uom', sql.VarChar, uom);
+      request.input('design_model', sql.VarChar, design_model);
+      request.input('make', sql.VarChar, make);
+      request.input('barcode', sql.VarChar, barCode);
+      request.input('group_code', sql.Decimal, group_code) || 0;
+      request.input('tax_code', sql.VarChar, tax_code);
+      request.input('retail_min', sql.Decimal, retail_min);
+      request.input('retail_max', sql.Decimal, retail_max);
+      request.input('urdu_desc', sql.NVarChar, urdu_desc);
+  
+      // Query for product details
+      const productQuery = `
+        INSERT INTO item_description (
+          product_code, product_desc, cost, retail, qty_inhand, 
+          case_qty, category_code, sale_tax,
+          bin_location, item_disc, branch_id, joining_date, brand_code, sub_category, 
+          uom, design_model, make, barcode, group_code,
+          tax_code, retail_min, retail_max, urdu_desc
+        ) VALUES (
+          @product_code, @product_desc, @cost, @retail, @qty_inhand, 
+          @case_qty, @category_code, @sale_tax,
+          @bin_location, @item_disc, @branch_id, @joining_date, @brand_code, @sub_category, 
+          @uom, @design_model, @make, @barcode, @group_code,
+          @tax_code, @retail_min, @retail_max, @urdu_desc
+        )
+      `;
+  
+      // Execute the product details query
+      await request.query(productQuery);
+    //console.log(imageBuffer)
+      // If image is provided, insert it
+      if (imageBuffer) {
+        const imageRequest = pool.request();
+        imageRequest.input('product_code', sql.Decimal, productCode);
+        imageRequest.input('picture', sql.VarBinary, imageBuffer);
+  
+        const imageQuery = `
+          INSERT INTO item_images (product_code, picture)
+          VALUES (@product_code, @picture)
+        `;
+        await imageRequest.query(imageQuery);
+      }
+  
+      res.status(200).send("Product Saved Successfully!");
+    } catch (error) {
+      console.error("Error saving product or image:", error);
+      res.status(500).send("Error saving product or image.");
+    }
+  });
+  // app.get('/api/get-product-by-code/:productCode', (req, res) => {
+
+  //   const { productCode } = req.params;
+    
+  //   pool.execute('SELECT * FROM item_description,item_images WHERE product_code = ?', [productCode], (err, results) => {
+  //     if (err) {
+  //       console.error(err);
+  //       return res.status(500).send('Error retrieving product');
+  //     }
+      
+  //     if (results.length === 0) {
+  //       return res.status(404).send('Product not found');
+  //     }
+  
+  //     return res.json(results[0]); // Return the first result (should be unique based on product_code)
+  //   });
+  // });
+  // app.get('/api/get-product-by-code/:productCode', async (req, res) => {
+  //   const { productCode } = req.params;
+  
+  //   try {
+  //     const result = await pool.request()
+  //     .input('productCode', sql.Decimal, productCode)
+  //       .query(`
+  //         SELECT 
+  //           item_description.*, 
+  //           item_images.*
+  //         FROM 
+  //           item_description
+  //         INNER JOIN 
+  //           item_images
+  //         ON 
+  //           item_description.product_code = item_images.product_code
+  //         WHERE 
+  //           item_description.product_code = @productCode
+  //       `);
+  //     if (result.recordset.length === 0) {
+  //       return res.status(404).send('Product not found');
+  //     }
+  
+  //     return res.json(result.recordset); // Return the first result (if found)
+  //   } catch (err) {
+  //     console.error('Error retrieving product:', err);
+  //     return res.status(500).send('Error retrieving product');
+  //   }
+  // });
+  
+  app.get('/api/get-product-by-code/:productCode', async (req, res) => {
+    const { productCode } = req.params;
+  
+    try {
+      const result = await pool.request()
+        .input('productCode', sql.Decimal, productCode)
+//         .query(`
+//           SELECT 
+//             item_description.*, 
+//             item_images.*
+//        FROM item_description
+// JOIN item_images
+//           ON 
+//             item_description.product_code = item_images.product_code
+//             WHERE item_description.product_code = @productCode
+        
+//         `);
+.query(`
+SELECT 
+item_description.*, 
+item_images.picture
+FROM item_description
+LEFT JOIN item_images
+ON item_description.product_code = item_images.product_code
+WHERE item_description.product_code = @productCode
+`);
+
+      if (result.recordset.length === 0) {
+        return res.status(404).send('Product not found');
+      }
+  
+      const product = result.recordset;
+     // console.log("Yes IMAG CONVERT"+product.picture)
+      // Convert binary image data to Base64
+      // if ((product.picture)!=0) {
+      //   product.picture = Buffer.from(product.picture).toString('base64');
+      //    console.log("Yes IMAG CONVERT"+product.picture)
+      
+      // }
+
+      //console.log(product)
+      res.json(product); // Send the product with the converted image
+    } catch (err) {
+      console.error('Error retrieving product:', err);
+      res.status(500).send('Error retrieving product');
+    }
+  });
+  
+  app.put("/api/update-product/:product_code", async (req, res) => {
+    const {
+      product_desc, cost, retail, avg_cost, qty_inhand, case_qty, category_code,
+      sale_tax, bin_location, item_disc, branch_id, joining_date, brand_code, 
+      sub_category, uom, design_model, make, barcode, group_code, tax_code, 
+      retail_min, retail_max, urdu_desc, picture
+    } = req.body;
+  
+    const productCode = req.params.product_code; // Get product code from URL params
+  
+    try {
+      // Create the image buffer if the picture is provided
+      let imageBuffer = null;
+      if (picture) {
+        imageBuffer = Buffer.from(picture, "base64");
+      }
+  
+      const request = pool.request();
+      request.input('product_code', sql.Decimal, productCode);
+      request.input('product_desc', sql.VarChar, product_desc);
+      request.input('cost', sql.Decimal, cost);
+      request.input('retail', sql.Decimal, retail);
+      request.input('avg_cost', sql.Decimal, avg_cost);
+      request.input('qty_inhand', sql.Decimal, qty_inhand);
+      request.input('case_qty', sql.Decimal, case_qty);
+      request.input('category_code', sql.Decimal, category_code);
+      request.input('sale_tax', sql.Decimal, sale_tax);
+      request.input('bin_location', sql.VarChar, bin_location);
+      request.input('item_disc', sql.Decimal, item_disc);
+      request.input('branch_id', sql.VarChar, branch_id);
+      request.input('joining_date', sql.DateTime, joining_date);
+      request.input('brand_code', sql.Decimal, brand_code);
+      request.input('sub_category', sql.VarChar, sub_category);
+      request.input('uom', sql.VarChar, uom);
+      request.input('design_model', sql.VarChar, design_model);
+      request.input('make', sql.VarChar, make);
+      request.input('barcode', sql.VarChar, barcode);
+      request.input('group_code', sql.Decimal, group_code);
+      request.input('tax_code', sql.VarChar, tax_code);
+      request.input('retail_min', sql.Decimal, retail_min);
+      request.input('retail_max', sql.Decimal, retail_max);
+      request.input('urdu_desc', sql.NVarChar, urdu_desc);
+  
+      // Query to update the product details
+      const updateProductQuery = `
+        UPDATE item_description
+        SET product_desc = @product_desc, cost = @cost, retail = @retail, avg_cost = @avg_cost,
+            qty_inhand = @qty_inhand, case_qty = @case_qty, category_code = @category_code,
+            sale_tax = @sale_tax, bin_location = @bin_location, item_disc = @item_disc, 
+            branch_id = @branch_id, joining_date = @joining_date, brand_code = @brand_code, 
+            sub_category = @sub_category, uom = @uom, design_model = @design_model, make = @make, 
+            barcode = @barcode, group_code = @group_code, tax_code = @tax_code, 
+            retail_min = @retail_min, retail_max = @retail_max, urdu_desc = @urdu_desc
+        WHERE product_code = @product_code
+      `;
+  
+      await request.query(updateProductQuery);
+  
+      // If an image is provided, update the image
+      if (imageBuffer) {
+        const imageRequest = pool.request();
+        imageRequest.input('product_code', sql.Decimal, productCode);
+        imageRequest.input('picture', sql.VarBinary, imageBuffer);
+  
+        const updateImageQuery = `
+          UPDATE item_images
+          SET picture = @picture
+          WHERE product_code = @product_code
+        `;
+        await imageRequest.query(updateImageQuery);
+      }
+  
+      res.status(200).send("Product Updated Successfully!");
+    } catch (error) {
+      console.error("Error updating product or image:", error);
+      res.status(500).send("Error updating product or image.");
+    }
+  });
+  
+  //for edit product page
+  // app.get('/editproduct', async (req, res) => {
+
+  //   try {
+  //     const result = await pool.request()
+  // .query("SELECT *from  item_description");
+  // //console.log("fetched bin"+ JSON.stringify(result.recordset, null, 2))
+  //  res.json(result.recordset);
+  //    } catch (err) {
+  //      console.error('Query Error: ', err);
+  //      res.status(500).send(err.message);
+  //    }
+  // });
+  app.get('/api/get-items', async (req, res) => {
+    try {
+        const pool = await sql.connect(config);
+        const result = await pool.request().query('SELECT * FROM item_description');
+        res.json(result.recordset);
+    } catch (error) {
+        console.error('Error fetching items:', error);
+        res.status(500).send('Error fetching items');
+    }
+});
+
+// Search items by product_desc
+app.get('/api/search-items', async (req, res) => {
+    const { product_desc } = req.query;
+    try {
+        const pool = await sql.connect(config);
+        const result = await pool
+            .request()
+            .input('product_desc', sql.VarChar, `%${product_desc}%`)
+            .query('SELECT * FROM item_description WHERE product_desc LIKE @product_desc');
+        res.json(result.recordset);
+    } catch (error) {
+        console.error('Error searching items:', error);
+        res.status(500).send('Error searching items');
+    }
+});
+  
+  // app.post("/api/save-product-image", async (req, res) => {
+  //   const { product_code, picture } = req.body; // Get product code and image (base64)
+    
+  //   if (!picture) {
+  //     return res.status(400).send("No image provided");
+  //   }
+  
+  //   const productCode = product_code || 0; // Default to 0 if no product code is provided
+  
+  //   try {
+  //     // Convert base64 to binary
+  //     const imageBuffer = Buffer.from(picture, "base64");  // Convert the base64 string to a buffer
+  
+  //     // Use the mssql connection pool to execute the query
+  //     const request = pool.request();
+  //     request.input('product_code', sql.Decimal, productCode);  // Pass product_code as parameter
+  //     request.input('picture', sql.VarBinary, imageBuffer);      // Pass imageBuffer as parameter
+  
+  //     const query = `
+  //       INSERT INTO item_images (product_code, picture) 
+  //       VALUES (@product_code, @picture)
+  //     `;
+  //     await request.query(query);
+  
+  //     res.status(200).send("Image saved successfully!");
+  //   } catch (error) {
+  //     console.error("Error converting base64 to buffer:", error);
+  //     res.status(500).send("Error processing the image.");
+  //   }
+  // });
+  app.get('/accountmaster', async (req, res) => {
+    try {
+     const result = await pool.request()
+ .input('branch_id', sql.VarChar, branch_G)
+ .query("select *from accounts_master where account_type=701 and branch_id=@branch_id");
+           //  console.log("Salesmen Field Done: " + JSON.stringify(result.recordset, null, 2));
+
+  res.json(result.recordset);
+    } catch (err) {
+      console.error('Query Error: ', err);
+      res.status(500).send(err.message);
+    }
+  });
+
+  app.post('/voucher', async (req, res) => {
+    try { 
+      const result = await pool.request()
+      .input('branch_id', sql.VarChar, branch_G)
+      .query("select max(voucher_no) As vouc from voucher_master where voucher_type=4 and branch_id=@branch_id");
+  
+      //console.log('SQL Query Result:', result.recordset);
+      let newVoucherNumber = (result.recordset[0]?.vouc === null) ? 1 : result.recordset[0].vouc + 1;
+  
+      res.json({ voucher_number: newVoucherNumber });
+      //console.log(newInvoiceNumber);
+    } catch (err) {
+      console.error('Query Error: ', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+  app.get('/getPaymentsLedger', async (req, res) => {
+    const masterCode = req.query.masterCode; // Pass masterCode as query parameter
+    
+    try {
+      const result = await sql.query(`SELECT * FROM payments_ledger WHERE master_code = ${masterCode}`);
+      res.json(result.recordset); // Send the filtered data as response
+    } catch (err) {
+      res.status(500).json({ error: err.message }); // Handle errors
+    }
+  });
+  
+  // app.post("/saveVoucher", async (req, res) => {
+  //   const pool = await sql.connect(config);
+    
+  //   const {
+  //     voucher_no,
+  //     voucher_type,
+  //     wk_no,
+  //     voucher_year,
+  //     voucher_month,
+  //     dt_date,
+  //     dt_datetime,
+  //     items,
+  //   } = req.body;
+  
+  //   try {
+  //     if (!items || items.length === 0) {
+  //       return res.status(400).json({ error: "Items array is required." });
+  //     }
+  
+  //     // Insert items into voucher_master
+  //     let s_no = 1; // Initialize serial number
+  //     for (const item of items) {
+  //       const query = `
+  //         INSERT INTO voucher_master 
+  //         (voucher_no, voucher_type, account_no, branch_id, wk_no, voucher_year, voucher_month, 
+  //         s_no, debit, credit, particular, title, dt_date, ref_doc_no, prv_balance, discount) 
+  //         VALUES 
+  //         (@voucher_no, @voucher_type, @account_no, @branch_id, @wk_no, @voucher_year, @voucher_month, 
+  //         @s_no, @debit, @credit, @particular, @title, @dt_date, @ref_doc_no, @prv_balance, @discount)
+  //       `;
+  
+  //       await pool.request()
+  //         .input("voucher_no", sql.Decimal(18, 0), voucher_no)
+  //         .input("voucher_type", sql.Int, voucher_type)
+  //         .input("account_no", sql.Decimal(18, 0), item.account_no)
+  //         .input("branch_id", sql.VarChar(50), item.branch_id)
+  //         .input("wk_no", sql.Int, wk_no)
+  //         .input("voucher_year", sql.Int, voucher_year)
+  //         .input("voucher_month", sql.Int, voucher_month)
+  //         .input("s_no", sql.Int, s_no++) // Increment s_no for each item
+  //         .input("debit", sql.Decimal(18, 0), item.debit)
+  //         .input("credit", sql.Decimal(18, 0), item.credit)
+  //         .input("particular", sql.VarChar(250), item.particular)
+  //         .input("title", sql.VarChar(250), item.title)
+  //         .input("dt_date", sql.DateTime, dt_date)
+  //         // .input("dt_datetime", sql.DateTime, dt_datetime)
+  //         .input("ref_doc_no", sql.Decimal(18, 0), item.ref_doc_no)
+  //         .input("prv_balance", sql.Decimal(18, 0), item.prv_balance)
+  //         .input("discount", sql.Decimal(18, 2), item.discount)
+  //         .query(query);
+  //     }
+  
+  //     res.status(200).json({ message: "Voucher saved successfully!" });
+  //   } catch (error) {
+  //     console.error("Error saving voucher:", error);
+  //     res.status(500).json({ error: "Failed to save voucher." });
+  //   } 
+    
+  // });
+  app.post("/saveVoucher", async (req, res) => {
+    const pool = await sql.connect(config);
+  
+    const {
+      voucher_no,
+      particular,
+      voucher_type,
+      wk_no,
+
+      voucher_year,
+      voucher_month,
+      dt_date
+      ,ref_doc_no,
+      dt_datetime,
+      items,
+      last_account_no,
+      last_debit,
+      last_title,
+      last_discount,
+      discount
+      // manualItem, // For manual item input
+    } = req.body;
+  console.log("Voucher no"+voucher_no)
+    try {
+      if (!items || items.length === 0) {
+        return res.status(400).json({ error: "Items array is required." });
+      }
+      items.sort((a, b) => a.s_no - b.s_no);
+      // Insert items into voucher_master
+      let s_no = 1; // Initialize serial number
+      for (const item of items) {
+        const query = `
+          INSERT INTO voucher_master 
+          (voucher_no, voucher_type, account_no, branch_id, wk_no, voucher_year, voucher_month, dt_datetime,
+          s_no, debit, credit, particular, title, dt_date, ref_doc_no, prv_balance, discount) 
+          VALUES 
+          (@voucher_no, @voucher_type, @account_no, @branch_id, @wk_no, @voucher_year, @voucher_month,@dt_datetime,
+          @s_no, @debit, @credit, @particular, @title, @dt_date, @ref_doc_no, @prv_balance, @discount)
+        `;
+  
+        await pool.request()
+          .input("voucher_no", sql.Decimal(18, 0), voucher_no)
+          .input("voucher_type", sql.Int, voucher_type)
+          .input("account_no", sql.Decimal(18, 0), item.account_no)
+          .input("branch_id", sql.VarChar(50), item.branch_id)
+          .input("wk_no", sql.Int, wk_no)
+          .input("voucher_year", sql.Int, voucher_year)
+          .input("voucher_month", sql.Int, voucher_month)
+          .input("dt_datetime", sql.DateTime,dt_datetime)
+       
+          .input("s_no", sql.Int, s_no++) // Increment s_no for each item
+          .input("debit", sql.Decimal(18, 0), item.debit)
+          .input("credit", sql.Decimal(18, 0), item.credit)
+          .input("particular", sql.VarChar(250), item.particular)
+          .input("title", sql.VarChar(250), item.title)
+          .input("dt_date", sql.DateTime, dt_date)
+          .input("ref_doc_no", sql.Decimal(18, 0), item.ref_doc_no)
+          .input("prv_balance", sql.Decimal(18, 0), item.prv_balance)
+          .input("discount", sql.Decimal(18, 2), item.discount)
+          .query(query);
+       
+      }
+const manualItem=true;
+      // If manual item is provided, insert it as well
+      if (manualItem) {
+        const query = `
+          INSERT INTO voucher_master 
+          (voucher_no, voucher_type, account_no, branch_id, wk_no, voucher_year, voucher_month,dt_datetime,
+          s_no, debit, credit, particular, title, dt_date, ref_doc_no, prv_balance, discount) 
+          VALUES 
+          (@voucher_no, @voucher_type, @account_no, @branch_id, @wk_no, @voucher_year, @voucher_month,@dt_datetime,
+          @s_no, @debit, @credit, @particular, @title, @dt_date, @ref_doc_no, @prv_balance, @discount)
+        `;
+  
+        await pool.request()
+          .input("voucher_no", sql.Decimal(18, 0), voucher_no)
+          .input("voucher_type", sql.Int, voucher_type)
+          .input("account_no", sql.Decimal(18, 0), last_account_no)
+          .input("branch_id", sql.VarChar(50), branch_G)
+          .input("wk_no", sql.Int, wk_no)
+          .input("voucher_year", sql.Int, voucher_year)
+          .input("voucher_month", sql.Int, voucher_month)
+          .input("dt_datetime", sql.DateTime,dt_datetime)
+          .input("s_no", sql.Int, s_no++) // Increment s_no for the manual item
+          .input("debit", sql.Decimal(18, 0),  last_debit)
+          .input("credit", sql.Decimal(18, 0), 0)
+          .input("particular", sql.VarChar(250), particular || 'CASH RECEIVED')
+          .input("title", sql.VarChar(250), last_title)
+          .input("dt_date", sql.DateTime, dt_date)
+          .input("ref_doc_no", sql.Decimal(18, 0), ref_doc_no)
+          .input("prv_balance", sql.Decimal(18, 0), 0)
+          .input("discount", sql.Decimal(18, 2),  last_discount)
+          .query(query);
+      }
+  
+      res.status(200).json({ message: "Voucher saved successfully!" });
+    } catch (error) {
+      console.error("Error saving voucher:", error);
+      res.status(500).json({ error: "Failed to save voucher." });
+    }
+  });
+  
   // Start the server
   app.listen(3001, () => {
     console.log('Backend server is running on port 3001');

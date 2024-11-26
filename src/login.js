@@ -35,7 +35,7 @@ let selectedCodeG ;
         setBranchCode(selectedCode);
         //Cookies.set('branchCode', selectedCode)
         Cookies.set('branchCode', selectedCode, { path: '/' , sameSite: 'None', secure: true  });
-        console.log("Hey i am in cookie login"+  Cookies.set('branchCode', selectedCode));
+      //  console.log("Hey i am in cookie login"+  Cookies.set('branchCode', selectedCode));
     
         // Send branch code to the server to save in the session
     //     fetch('http://localhost:3001/set-branch', {

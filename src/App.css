@@ -1,5 +1,4 @@
 
-/* login */
 .login-container {
   background: url("/public/assets/PRUPLE.webp") center center / cover no-repeat fixed !important;
 
@@ -13,9 +12,16 @@
   height: 100vh;
   /* overflow-y: hidden; */
 }
-/* .arrange {
+.urdu-description{
+     height: 70%
+}
+/* .a
+rrange {
   width: max-content !important;
 } */
+th .p-set{
+  padding: '10px !imortant' ;
+ }
 .card {
   /* width: 100%;
   max-width: 550px; */
@@ -23,6 +29,23 @@
   
   border-radius: 10px;
   box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1); /* Shadow effect */
+}
+table {
+  width: 100%;
+  border-collapse: collapse; /* Ensures the borders are merged */
+  border: 1px solid gray;
+}
+
+table th, table td {
+  text-align: center; /* Centers the content in both th and td */
+
+}
+table tr .txt-dec {
+  text-align: left !important; /* Ensures left alignment */
+}
+
+table tbody{
+  margin-top: 20% !important;
 }
 .form-control,.color-border{
   border:1px solid #98198e !important;
@@ -80,9 +103,10 @@ background-color: transparent !important;}
   /* position: relative; */
 }
 
-.btn-primary:hover {
+.btn-primary:hover{
   background-color: #3C0A6A !important; /* Darker blue on hover */
   font-weight: bold !important;
+
 }
 .last{
   background: #98198e!important;
@@ -126,9 +150,44 @@ background-color: transparent !important;}
   background-color: white;
   margin: 4px 0;
 }
-
+@media (max-width: 1200px) {
+  .inv_layout2{
+    margin-top: 70px !important;
+  }
+}
 /* Media query for 768px and below */
 @media (max-width: 768px) {
+  /* .voch-rec-header{
+
+  } */
+  .custom-upload-button {
+ 
+    margin: 1vh 0 !important; /* Add spacing */
+  }
+  
+  .urdu-description{
+    height: 70%
+}
+ 
+  .heading-table
+  {
+    width: 100% !important;
+  }
+  .voch-rec-header .p-4{
+    padding: 10px !important;
+    margin: 0% !important;
+  }
+  .voch-rec-header{
+    flex-direction: column-reverse;
+  } 
+  .voch-rec-header-inner{
+width: 100% !important;
+flex-direction: column-reverse !important;
+
+  }
+  .voch-rec-header-inner .w-50, .voch-rec-header-inner .w-25{
+    width: 100% !important;
+  }
    .inv-layout{
     max-width: 630px !important;
   margin-top: 70px !important;
@@ -168,6 +227,7 @@ background-color: transparent !important;}
   }
 }
 @media (max-width: 1000px) {
+
   .res{
     display: flex!important;
     flex-direction: column-reverse;
@@ -186,7 +246,19 @@ width: 100% !important;
 }
 @media (max-width: 768px) {
   
-  
+  tr .w-25{
+    width: 100%;
+  }
+  table {
+    font-size: 12px;
+  }
+  /* .p5{
+    padding: 1px !important;
+  } */
+  .form-control, .react-select__control {
+    width: 100% !important;
+  }
+
   /* video{
     object-fit: contain;
   } */
@@ -270,8 +342,33 @@ width: 100% !important;
   #f5f8f9;
   position: relative;
   /* padding: 5% 0; */
-  /* overflow: hidden; */
+  /* overflow: hidden; */}
+  /* .custom-radio {
+    border: 2px solid #98198E !important;
+  } */
 
+  /* When a radio button is selected (checked), make the circle purple */
+  
+  
+  .custom-radio{
+    background-color: rgb(173, 165, 165) !important;
+  }
+  .custom-radio:checked {
+    background-color: #98198E !important;
+    border-color: #98198E !important;
+  }
+
+  /* Optional: Ensure focus outline doesn't clash with the purple color */
+  .custom-radio:focus {
+    box-shadow: 0 0 0 0.25rem rgba(152, 25, 142, 0.5) !important;
+  }
+.bg-l2{
+  background-color: 
+  
+  #f5f8f9;
+}
+.bg-p{
+  background-color: #98198e !important;
 }
 .fixed-top {
   position: fixed;
@@ -320,10 +417,44 @@ width: 100% !important;
 
 } */
 .txt-dec{
-color: #98198e;
-font-weight: bold;
-font-size:medium;
+color: #98198e !important;
+font-weight: bold !important;
+font-size:medium !important;
 }
 .bg-yellow{
   background-color: yellow !important;
+}
+/* General table styles */
+.responsive-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14px; /* Default font size */
+}
+
+.responsive-table th,
+.responsive-table td {
+  padding: 8px;
+  text-align: left;
+  border: 1px solid #ddd; /* Optional: Add borders */
+}
+
+.responsive-table thead {
+  background-color: #800080; /* Purple header */
+  color: white;
+}
+
+.responsive-table tbody tr:nth-child(even) {
+  background-color: #f2f2f2; /* Optional: Add row striping */
+}
+
+/* Responsive styles */
+@media screen and (max-width: 768px) {
+  .responsive-table {
+    font-size: 12px; /* Adjust font size */
+  }
+  
+  .responsive-table th,
+  .responsive-table td {
+    padding: 6px; /* Reduce padding */
+  }
 }
