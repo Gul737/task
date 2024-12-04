@@ -208,46 +208,32 @@ const backendToCheckboxMap = {
     cost: "Costing",
     slip: "Slips",
     slip_modify: "Slips Modify",
-    verify_transfer_slips: "Verify Transfer Slips",
+     rd_slip_verify: "Verify Transfer Slips",
     adjustment: "Adjustment",
 
-    cheque_manager: "Allow Cheque Manager",
-    cheque_pay: "Allow Cheque Pay",
-    cheque_receive: "Allow Cheque receive",
+     chq_manger: "Allow Cheque Manager",
+    chq_pay: "Allow Cheque Pay",
+    chq_rec: "Allow Cheque receive",
 
     customer: "Customer",
-    customer_modify: "Customer Modify",
+    cust_modify: "Customer Modify",
     customer_list: "Customer List",
-    supplier: "Supplier",
-    supplier_modify: "Supplier Modify",
+    suplier: "Supplier",
+    supp_modify: "Supplier Modify",
     supplier_list: "Supplier List",
 
     crm: "CRM",
     reports: "Reports",
     accounts: "Accounts",
-    purchase_order: "Purchase Order",
-    purchase_order_modify: "Purchase Order Modify",
+    po: "Purchase Order",
+    po_m: "Purchase Order Modify",
     view_others_accounts_group: "View Others Accounts Group",
-    view_expense_group: "View Expense Group",
+     view_exp: "View Expense Group",
     view_other_branches: "View Other Branches",
     fund_transfer: "Fund Transfer",
     fund_transfer_verify: "Fund Transfer Verify",
-    employee_group_po: "Employee Group PO"
+    emp_grp: "Employee Group PO"
 };
-
-// const fetchEmployeeRights = (emp_code) => {
-//     fetch(`http://localhost:3001/get-rights/${emp_code}`)
-//         .then((response) => response.json())
-//         .then((data) => {
-//             if (Array.isArray(data) && data.length > 0) {
-//                 console.log("Fetched data keys:", Object.keys(data[0])); // Access first element
-//             } else {
-//                 console.error("Unexpected data format:", data);
-//             }
-//         })
-//         .catch((error) => console.error("Error fetching rights:", error));
-// };
-
 
 const fetchEmployeeRights = (emp_code) => {
   fetch(`http://localhost:3001/get-rights/${emp_code}`)
@@ -262,9 +248,10 @@ const fetchEmployeeRights = (emp_code) => {
         // Loop through each key in the fetched data
         Object.keys(backendToCheckboxMap).forEach((key) => {
           const checkboxKey = backendToCheckboxMap[key];
-          if (checkboxKey) {
-            // Check if the fetched data contains this key and set `checked` based on its value
-            updatedCheckboxData["Sale Rights"].forEach((item) => {
+
+          // Find the corresponding rights section
+          for (const tab in updatedCheckboxData) {
+            updatedCheckboxData[tab].forEach((item) => {
               if (item.name === checkboxKey) {
                 item.checked = data[0][key] === 1; // Set to true if value is 1
               }
@@ -272,7 +259,6 @@ const fetchEmployeeRights = (emp_code) => {
           }
         });
 
-      
         setCheckboxData(updatedCheckboxData);
       } else {
         console.error("Unexpected data format:", data);
@@ -280,6 +266,39 @@ const fetchEmployeeRights = (emp_code) => {
     })
     .catch((error) => console.error("Error fetching rights:", error));
 };
+
+
+// const fetchEmployeeRights = (emp_code) => {
+//   fetch(`http://localhost:3001/get-rights/${emp_code}`)
+//     .then((response) => response.json())
+//     .then((data) => {
+//       if (Array.isArray(data) && data.length > 0) {
+//         console.log("Fetched data keys:", Object.keys(data[0])); // Debug fetched keys
+
+//         // Create a new state object for checkboxes
+//         const updatedCheckboxData = { ...checkboxData };
+
+//         // Loop through each key in the fetched data
+//         Object.keys(backendToCheckboxMap).forEach((key) => {
+//           const checkboxKey = backendToCheckboxMap[key];
+//           if (checkboxKey) {
+//             // Check if the fetched data contains this key and set `checked` based on its value
+//             updatedCheckboxData["Sale Rights"].forEach((item) => {
+//               if (item.name === checkboxKey) {
+//                 item.checked = data[0][key] === 1; // Set to true if value is 1
+//               }
+//             });
+//           }
+//         });
+
+      
+//         setCheckboxData(updatedCheckboxData);
+//       } else {
+//         console.error("Unexpected data format:", data);
+//       }
+//     })
+//     .catch((error) => console.error("Error fetching rights:", error));
+// };
 useEffect(() => {
     if (selectedEmployee) {
         fetchEmployeeRights(selectedEmployee.value); 
