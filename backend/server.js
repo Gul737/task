@@ -1629,57 +1629,22 @@ const manualItem=true;
       try {
         const {
           salesman_code, 
-          sale, 
-          sale_modify, 
-          sale_return, 
-          sale_return_modify,
-          purchase,
-          purchase_modify,
-          purchase_return,
-          purchase_return_modify,
-          customer,
-          suplier,
-          cust_modify,
-          supp_modify,
-          jv,crm,voucher,
-          bank,item,
-          cost,
-          item_list,customer_list,supplier_list,
-          accounts,reports,pay_vouchers,adjustment,slip,
-          slip_modify,pay_vouchers_m,voucher_m,quotation,quotation_m,po,po_m,
-          item_modify,
-          expence,
-          cost_increase,
-          cr_date_only,
-          chng_inv_date,
-          credit_inv,
-          qt_verify,
-          pur_date,
-          chng_date_cr,
-          md_cr_cr_day,
-          chng_date_pay,
-          md_pay_cr_day,
-          chng_date_exp,
-          exp_modify,
-          chng_date_bcr,
-          md_bcr_cr_day,
-          chng_date_bpay,
-          md_bpay_cr_day,
-          jv_modify,
-          rd_slip_verify,
-          chq_manger,
-          chq_pay,
-          chq_rec,
-          view_drawing,
-          view_exp,
-          inv_receiving,
-          bank_rec,
-          bank_rec_m,
-          bank_pay,
-          bank_pay_m,
-          view_other_branches,
-          fund_transfer,
-          fund_transfer_verify,
+          sale, sale_modify, sale_return, sale_return_modify,
+          purchase, purchase_modify, purchase_return, purchase_return_modify,
+          customer, suplier, cust_modify, supp_modify,
+          jv, crm, voucher, bank, item, cost,
+          item_list, customer_list, supplier_list,
+          accounts, reports, pay_vouchers, adjustment,
+          slip, slip_modify, pay_vouchers_m, voucher_m,
+          quotation, quotation_m, po, po_m, item_modify,
+          expence, cost_increase, cr_date_only,
+          chng_inv_date, credit_inv, qt_verify, pur_date,
+          chng_date_cr, md_cr_cr_day, chng_date_pay, md_pay_cr_day,
+          chng_date_exp, exp_modify, chng_date_bcr, md_bcr_cr_day,
+          chng_date_bpay, md_bpay_cr_day, jv_modify, rd_slip_verify,
+          chq_manger, chq_pay, chq_rec, view_drawing, view_exp,
+          inv_receiving, bank_rec, bank_rec_m, bank_pay, bank_pay_m,
+          view_other_branches, fund_transfer, fund_transfer_verify,
           emp_grp
         } = req.body;
     
@@ -1690,10 +1655,62 @@ const manualItem=true;
           .query(checkQuery);
     
         const query = result.recordset[0].count > 0 
-          ? `UPDATE dbo.tblrights SET sale = @sale, sale_modify = @sale_modify, sale_return = @sale_return, sale_return_modify = @sale_return_modify, purchase = @purchase, purchase_modify = @purchase_modify, purchase_return = @purchase_return, purchase_return_modify = @purchase_return_modify, customer = @customer, suplier = @suplier, cust_modify = @cust_modify, supp_modify = @supp_modify, jv = @jv, crm = @crm, voucher = @voucher, bank = @bank, item = @item, cost = @cost, item_list = @item_list, customer_list = @customer_list, supplier_list = @supplier_list, accounts = @accounts, reports = @reports, pay_vouchers = @pay_vouchers, adjustment = @adjustment, slip = @slip, slip_modify = @slip_modify, pay_vouchers_m = @pay_vouchers_m, voucher_m = @voucher_m, quotation = @quotation, quotation_m = @quotation_m, po = @po, po_m = @po_m,emp_grp=@emp_grp WHERE salesman_code = @salesman_code` 
-          : `INSERT INTO dbo.tblrights (salesman_code, sale, sale_modify, sale_return, sale_return_modify, purchase, purchase_modify, purchase_return, purchase_return_modify, customer, suplier, cust_modify, supp_modify, jv, crm, voucher, bank, item, cost, item_list, customer_list, supplier_list, accounts, reports, pay_vouchers, adjustment, slip, slip_modify, pay_vouchers_m, voucher_m, quotation, quotation_m, po, po_m,emp_grp) 
-             VALUES (@salesman_code, @sale, @sale_modify, @sale_return, @sale_return_modify, @purchase, @purchase_modify, @purchase_return, @purchase_return_modify, @customer, @suplier, @cust_modify, @supp_modify, @jv, @crm, @voucher, @bank, @item, @cost, @item_list, @customer_list, @supplier_list, @accounts, @reports, @pay_vouchers, @adjustment, @slip, @slip_modify, @pay_vouchers_m, @voucher_m, @quotation, @quotation_m, @po, @po_m,@emp_grp)`;
-    //3rd
+          ? `UPDATE dbo.tblrights SET 
+              sale = @sale, sale_modify = @sale_modify, sale_return = @sale_return, sale_return_modify = @sale_return_modify,
+              purchase = @purchase, purchase_modify = @purchase_modify, purchase_return = @purchase_return, purchase_return_modify = @purchase_return_modify,
+              customer = @customer, suplier = @suplier, cust_modify = @cust_modify, supp_modify = @supp_modify,
+              jv = @jv, crm = @crm, voucher = @voucher, bank = @bank, item = @item, cost = @cost,
+              item_list = @item_list, customer_list = @customer_list, supplier_list = @supplier_list,
+              accounts = @accounts, reports = @reports, pay_vouchers = @pay_vouchers, adjustment = @adjustment,
+              slip = @slip, slip_modify = @slip_modify, pay_vouchers_m = @pay_vouchers_m, voucher_m = @voucher_m,
+              quotation = @quotation, quotation_m = @quotation_m, po = @po, po_m = @po_m, item_modify = @item_modify,
+              expence = @expence, cost_increase = @cost_increase, cr_date_only = @cr_date_only,
+              chng_inv_date = @chng_inv_date, credit_inv = @credit_inv, qt_verify = @qt_verify, pur_date = @pur_date,
+              chng_date_cr = @chng_date_cr, md_cr_cr_day = @md_cr_cr_day, chng_date_pay = @chng_date_pay, md_pay_cr_day = @md_pay_cr_day,
+              chng_date_exp = @chng_date_exp, exp_modify = @exp_modify, chng_date_bcr = @chng_date_bcr, md_bcr_cr_day = @md_bcr_cr_day,
+              chng_date_bpay = @chng_date_bpay, md_bpay_cr_day = @md_bpay_cr_day, jv_modify = @jv_modify, rd_slip_verify = @rd_slip_verify,
+              chq_manger = @chq_manger, chq_pay = @chq_pay, chq_rec = @chq_rec, view_drawing = @view_drawing, view_exp = @view_exp,
+              inv_receiving = @inv_receiving, bank_rec = @bank_rec, bank_rec_m = @bank_rec_m, bank_pay = @bank_pay, bank_pay_m = @bank_pay_m,
+              view_other_branches = @view_other_branches, fund_transfer = @fund_transfer, fund_transfer_verify = @fund_transfer_verify,
+              emp_grp = @emp_grp 
+            WHERE salesman_code = @salesman_code`
+          : `INSERT INTO dbo.tblrights 
+              (salesman_code, sale, sale_modify, sale_return, sale_return_modify,
+              purchase, purchase_modify, purchase_return, purchase_return_modify,
+              customer, suplier, cust_modify, supp_modify,
+              jv, crm, voucher, bank, item, cost,
+              item_list, customer_list, supplier_list,
+              accounts, reports, pay_vouchers, adjustment,
+              slip, slip_modify, pay_vouchers_m, voucher_m,
+              quotation, quotation_m, po, po_m, item_modify,
+              expence, cost_increase, cr_date_only,
+              chng_inv_date, credit_inv, qt_verify, pur_date,
+              chng_date_cr, md_cr_cr_day, chng_date_pay, md_pay_cr_day,
+              chng_date_exp, exp_modify, chng_date_bcr, md_bcr_cr_day,
+              chng_date_bpay, md_bpay_cr_day, jv_modify, rd_slip_verify,
+              chq_manger, chq_pay, chq_rec, view_drawing, view_exp,
+              inv_receiving, bank_rec, bank_rec_m, bank_pay, bank_pay_m,
+              view_other_branches, fund_transfer, fund_transfer_verify,
+              emp_grp) 
+            VALUES 
+              (@salesman_code, @sale, @sale_modify, @sale_return, @sale_return_modify,
+              @purchase, @purchase_modify, @purchase_return, @purchase_return_modify,
+              @customer, @suplier, @cust_modify, @supp_modify,
+              @jv, @crm, @voucher, @bank, @item, @cost,
+              @item_list, @customer_list, @supplier_list,
+              @accounts, @reports, @pay_vouchers, @adjustment,
+              @slip, @slip_modify, @pay_vouchers_m, @voucher_m,
+              @quotation, @quotation_m, @po, @po_m, @item_modify,
+              @expence, @cost_increase, @cr_date_only,
+              @chng_inv_date, @credit_inv, @qt_verify, @pur_date,
+              @chng_date_cr, @md_cr_cr_day, @chng_date_pay, @md_pay_cr_day,
+              @chng_date_exp, @exp_modify, @chng_date_bcr, @md_bcr_cr_day,
+              @chng_date_bpay, @md_bpay_cr_day, @jv_modify, @rd_slip_verify,
+              @chq_manger, @chq_pay, @chq_rec, @view_drawing, @view_exp,
+              @inv_receiving, @bank_rec, @bank_rec_m, @bank_pay, @bank_pay_m,
+              @view_other_branches, @fund_transfer, @fund_transfer_verify,
+              @emp_grp)`;
+    
         await pool.request()
           .input('salesman_code', sql.Decimal(18, 0), salesman_code || 0)
           .input('sale', sql.Int, sale || 0)
@@ -1730,46 +1747,45 @@ const manualItem=true;
           .input('po', sql.Int, po || 0)
           .input('po_m', sql.Int, po_m || 0)
           .input('item_modify', sql.Int, item_modify || 0)
-.input('expence', sql.Int, expence || 0)
-.input('cost_increase', sql.Int, cost_increase || 0)
-.input('cr_date_only', sql.Int, cr_date_only || 0)
-.input('chng_inv_date', sql.Int, chng_inv_date || 0)
-.input('credit_inv', sql.Int, credit_inv || 0)
-.input('qt_verify', sql.Int, qt_verify || 0)
-.input('pur_date', sql.Int, pur_date || 0)
-.input('chng_date_cr', sql.Int, chng_date_cr || 0)
-.input('md_cr_cr_day', sql.Int, md_cr_cr_day || 0)
-.input('chng_date_pay', sql.Int, chng_date_pay || 0)
-.input('md_pay_cr_day', sql.Int, md_pay_cr_day || 0)
-.input('chng_date_exp', sql.Int, chng_date_exp || 0)
-.input('exp_modify', sql.Int, exp_modify || 0)
-.input('chng_date_bcr', sql.Int, chng_date_bcr || 0)
-.input('md_bcr_cr_day', sql.Int, md_bcr_cr_day || 0)
-.input('chng_date_bpay', sql.Int, chng_date_bpay || 0)
-.input('md_bpay_cr_day', sql.Int, md_bpay_cr_day || 0)
-.input('jv_modify', sql.Int, jv_modify || 0)
-.input('rd_slip_verify', sql.Int, rd_slip_verify || 0)
-.input('chq_manger', sql.Int, chq_manger || 0)
-.input('chq_pay', sql.Int, chq_pay || 0)
-.input('chq_rec', sql.Int, chq_rec || 0)
-.input('view_drawing', sql.Int, view_drawing || 0)
-.input('view_exp', sql.Int, view_exp || 0)
-.input('inv_receiving', sql.Int, inv_receiving || 0)
-.input('bank_rec', sql.Int, bank_rec || 0)
-.input('bank_rec_m', sql.Int, bank_rec_m || 0)
-.input('bank_pay', sql.Int, bank_pay || 0)
-.input('bank_pay_m', sql.Int, bank_pay_m || 0)
-.input('view_other_branches', sql.Int, view_other_branches || 0)
-.input('fund_transfer', sql.Int, fund_transfer || 0)
-.input('fund_transfer_verify', sql.Int, fund_transfer_verify || 0)
-.input('emp_grp', sql.Int, emp_grp || 0)
-
+          .input('expence', sql.Int, expence || 0)
+          .input('cost_increase', sql.Int, cost_increase || 0)
+          .input('cr_date_only', sql.Int, cr_date_only || 0)
+          .input('chng_inv_date', sql.Int, chng_inv_date || 0)
+          .input('credit_inv', sql.Int, credit_inv || 0)
+          .input('qt_verify', sql.Int, qt_verify || 0)
+          .input('pur_date', sql.Int, pur_date || 0)
+          .input('chng_date_cr', sql.Int, chng_date_cr || 0)
+          .input('md_cr_cr_day', sql.Int, md_cr_cr_day || 0)
+          .input('chng_date_pay', sql.Int, chng_date_pay || 0)
+          .input('md_pay_cr_day', sql.Int, md_pay_cr_day || 0)
+          .input('chng_date_exp', sql.Int, chng_date_exp || 0)
+          .input('exp_modify', sql.Int, exp_modify || 0)
+          .input('chng_date_bcr', sql.Int, chng_date_bcr || 0)
+          .input('md_bcr_cr_day', sql.Int, md_bcr_cr_day || 0)
+          .input('chng_date_bpay', sql.Int, chng_date_bpay || 0)
+          .input('md_bpay_cr_day', sql.Int, md_bpay_cr_day || 0)
+          .input('jv_modify', sql.Int, jv_modify || 0)
+          .input('rd_slip_verify', sql.Int, rd_slip_verify || 0)
+          .input('chq_manger', sql.Int, chq_manger || 0)
+          .input('chq_pay', sql.Int, chq_pay || 0)
+          .input('chq_rec', sql.Int, chq_rec || 0)
+          .input('view_drawing', sql.Int, view_drawing || 0)
+          .input('view_exp', sql.Int, view_exp || 0)
+          .input('inv_receiving', sql.Int, inv_receiving || 0)
+          .input('bank_rec', sql.Int, bank_rec || 0)
+          .input('bank_rec_m', sql.Int, bank_rec_m || 0)
+          .input('bank_pay', sql.Int, bank_pay || 0)
+          .input('bank_pay_m', sql.Int, bank_pay_m || 0)
+          .input('view_other_branches', sql.Int, view_other_branches || 0)
+          .input('fund_transfer', sql.Int, fund_transfer || 0)
+          .input('fund_transfer_verify', sql.Int, fund_transfer_verify || 0)
+          .input('emp_grp', sql.Int, emp_grp || 0)
           .query(query);
     
-        res.status(200).json({ message: result.recordset[0].count > 0 ? 'Rights updated successfully!' : 'Rights inserted successfully!' });
-      } catch (error) {
-        console.error('Query Error: ', error);
-        res.status(500).json({ error: 'Failed to save rights' });
+        res.status(200).send({ message: 'Rights successfully saved or updated.' });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ error: 'An error occurred while saving rights.' });
       }
     });
     

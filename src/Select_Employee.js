@@ -160,49 +160,126 @@ function Select_Employee() {
       // Update logic here based on selected employee
     };
 
+const backendToCheckboxMap = {
+    sale: "Sale",
+    sale_modify: "Sale Modify",
+    sale_return: "Sale Return",
+    sale_return_modify: "Sale Return Modify",
+    cr_date_only: "Modify Sale Invoice Current Date Only",
+    chng_inv_date: "Change Invoice Date",
+    credit_inv: "Make Credit Sale",
+    quotation: "Quotation",
+    quotation_m: "Quotation Modify",
+    qt_verify: "Allow Quotation verify",
+    inv_receiving: "Invoice Receving",
 
-  
-    const fetchEmployeeRights = (emp_code) => {
-        fetch(`http://localhost:3001/get-rights/${emp_code}`)
-          .then((response) => response.json())
-          .then((data) => {
-            console.log("Fetched rights data:", data);
-            setCheckboxData((prev) => {
-              const updatedCheckboxData = { ...prev };
-              //console.log("Set Checkbox  rights data:",  setCheckboxData);
-              Object.keys(data).forEach((tab) => {
-                if (updatedCheckboxData[tab]) {
-                  updatedCheckboxData[tab] = updatedCheckboxData[tab].map((item) => {
-                    const keyMapping = {
-                      "sale": "Sale",
-                      "sale_modify": "Sale Modify",
-                      "sale_return": "Sale Return",
-                      // Other key mappings...
-                    };
-                  
-                    // Find the dbKey based on item.name
-                    const dbKey = Object.keys(keyMapping).find(key => keyMapping[key] === item.name);
-      
-                    if (dbKey) {
-                      return {
-                        ...item,
-                        checked: data[tab][dbKey] === 1,
-                      };
-                    } else {
-                     
-                      return item; // Return item as is if no mapping exists
-                    }
-                  });
-                }
-              });
-      
-              return updatedCheckboxData;
+    purchase: "Purchase",
+    purchase_modify: "Purchase Modify",
+    pur_date: "Change Purchase Date",
+    purchase_return: "Purchase Return",
+    purchase_return_modify: "Purchase Return Modify",
+
+    voucher: "Cash R vouchers",
+    pay_vouchers_m: "Cash R vouchers M",
+    chng_date_cr: "Change Date In Cash Rec",
+    md_cr_cr_day: "Modify Cash Receive Current Date Only",
+    chng_date_pay: "Cash P vouchers",
+    md_pay_cr_day: "Cash P vouchers M",
+    expence: "Expense",
+    exp_modify: "Expense Modify",
+    chng_date_exp: "Change Date In Expence Voucher",
+
+    bank: "Bank",
+    bank_rec: "Bank R vouchers",
+    bank_rec_m: "Bank R vouchers M",
+    chng_date_bcr: "Change Date In Bank Rec",
+    md_bcr_cr_day: "Modify Bank Receive Current Date Only",
+    bank_pay: "Bank P vouchers",
+    bank_pay_m: "Bank P vouchers M",
+    chng_date_bpay: "Change Date In Bank Pay",
+    md_bpay_cr_day: "Modify Bank Pay Current Date Only",
+
+    jv: "JV",
+    jv_modify: "JV Modify",
+
+    item: "Item",
+    item_modify: "Item Modify",
+    item_list: "Item List",
+    cost: "Costing",
+    slip: "Slips",
+    slip_modify: "Slips Modify",
+    verify_transfer_slips: "Verify Transfer Slips",
+    adjustment: "Adjustment",
+
+    cheque_manager: "Allow Cheque Manager",
+    cheque_pay: "Allow Cheque Pay",
+    cheque_receive: "Allow Cheque receive",
+
+    customer: "Customer",
+    customer_modify: "Customer Modify",
+    customer_list: "Customer List",
+    supplier: "Supplier",
+    supplier_modify: "Supplier Modify",
+    supplier_list: "Supplier List",
+
+    crm: "CRM",
+    reports: "Reports",
+    accounts: "Accounts",
+    purchase_order: "Purchase Order",
+    purchase_order_modify: "Purchase Order Modify",
+    view_others_accounts_group: "View Others Accounts Group",
+    view_expense_group: "View Expense Group",
+    view_other_branches: "View Other Branches",
+    fund_transfer: "Fund Transfer",
+    fund_transfer_verify: "Fund Transfer Verify",
+    employee_group_po: "Employee Group PO"
+};
+
+// const fetchEmployeeRights = (emp_code) => {
+//     fetch(`http://localhost:3001/get-rights/${emp_code}`)
+//         .then((response) => response.json())
+//         .then((data) => {
+//             if (Array.isArray(data) && data.length > 0) {
+//                 console.log("Fetched data keys:", Object.keys(data[0])); // Access first element
+//             } else {
+//                 console.error("Unexpected data format:", data);
+//             }
+//         })
+//         .catch((error) => console.error("Error fetching rights:", error));
+// };
+
+
+const fetchEmployeeRights = (emp_code) => {
+  fetch(`http://localhost:3001/get-rights/${emp_code}`)
+    .then((response) => response.json())
+    .then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        console.log("Fetched data keys:", Object.keys(data[0])); // Debug fetched keys
+
+        // Create a new state object for checkboxes
+        const updatedCheckboxData = { ...checkboxData };
+
+        // Loop through each key in the fetched data
+        Object.keys(backendToCheckboxMap).forEach((key) => {
+          const checkboxKey = backendToCheckboxMap[key];
+          if (checkboxKey) {
+            // Check if the fetched data contains this key and set `checked` based on its value
+            updatedCheckboxData["Sale Rights"].forEach((item) => {
+              if (item.name === checkboxKey) {
+                item.checked = data[0][key] === 1; // Set to true if value is 1
+              }
             });
-          })
-          .catch((error) => console.error("Error fetching rights:", error));
-      };
-      
+          }
+        });
 
+      
+        setCheckboxData(updatedCheckboxData);
+      } else {
+        console.error("Unexpected data format:", data);
+      }
+    })
+    .catch((error) => console.error("Error fetching rights:", error));
+};
 useEffect(() => {
     if (selectedEmployee) {
         fetchEmployeeRights(selectedEmployee.value); 
