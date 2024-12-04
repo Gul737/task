@@ -4,7 +4,12 @@ import Select from 'react-select';
 function Receive_voucher() {
     const [selectedName, setSelectedName] = useState(null); 
   const [selectedOption, setSelectedOption] = useState("customer");
-  
+  const [isModifyClicked, setIsModifyClicked] = useState(false);
+
+  // Event handler for Modify button
+  const handleModifyClick = () => {
+    setIsModifyClicked(true);
+  };
   useEffect(() => {
     // Default option is customer
     setSelectedOption("customer");
@@ -267,10 +272,9 @@ setCurrentDateYear(year); // Year is already an integer
   const [allData, setAllData] = useState({
         
     // voucher_no: voucherNumber ||0,
-      voucher_type:4,
-wk_no:1,
-
-dt_date:currentDate,
+       voucher_type:4,
+       wk_no:1,
+  dt_date:currentDate,
 
 items: [] 
     });
@@ -398,7 +402,268 @@ dt_datetime:currentDateTime,
           alert("Failed to save voucher data.");
         }
       };
+   
+    
+    // const handleNext = async () => {
+    //     try {
+    //         const response = await fetch(`http://localhost:3001/voucher?voucher_no=${voucherNumber}&direction=next`);
+    //         if (response.ok) {
+    //             const data = await response.json();
+    //             setVoucherNumber(data.voucher_no);
+    //             setFormData({
+    //                 last_account_no: data.last_account_no,
+    //                 last_title: data.last_title,
+    //                 last_debit: data.last_debit,
+    //                 last_discount: data.last_discount,
+    //             });
+    //             setItems(data.items);
+    //         } else {
+    //             alert('No next vouchers found.');
+    //         }
+    //     } catch (error) {
+    //         console.error('Error fetching next voucher:', error);
+    //     }
+    // };
+    const handleNext = async (voucherNumber) => {
+    
+      try {
+          const response = await fetch(`http://localhost:3001/nextVoucher?voucher_no=${voucherNumber}`);
+       
+          if (response.ok) {
+            
+            
+            const data = await response.json();
+            // console.log("NEXT"+data);
+            let findRecord= data;
+            const lastRecord = findRecord[findRecord.length - 1]; // Get the last record
+              // Set formData using the last record
+          
+              setVoucherNumber(lastRecord.voucher_no);
+  setFormData({
+    last_account_no: lastRecord.account_no,
+    last_debit: lastRecord.debit,
+    last_title: lastRecord.title,
+    last_credit: lastRecord.credit,
+    last_discount: lastRecord.discount,
+  });
+
+            findRecord = findRecord.slice(0, -1); // Removes the last item from the array
+
+            //alert(findRecord.length); 
+            const fetchedProducts = findRecord.map(item => ({
+              title: item.title,
+              account_no: item.account_no,
+              branch_id: item.branch_id,
+              particular: item.particular,
+              debit: item.debit,
+              ref_doc_no:item.ref_doc_no,
+              credit: item.credit,
+              prv_balance: item.prv_balance,
+              discount:item.discount
+              // total:(item.rate - item.discount) * item.qty,
+            }));
+            setItems([]); // Clear old items
+            setItems(fetchedProducts);
+           // alert(fetchedProducts)
+     
+       
+        }
+        
+        
+        else {
+            alert('Voucher not found.');
+        }
+          // if (response.ok) {
+          //       const data = await response.json();
+           
+          //   //alert('Voucher found.'+ data);
+           
+          //     // setFormData({
+          //     //     last_account_no: data.last_account_no,
+          //     //     last_title: data.last_title,
+          //     //     last_debit: data.last_debit,
+          //     //     last_discount: data.last_discount,
+          //     // });
+          //      setItems(data.items);
+          //      setVoucherNumber(data.voucher_no); 
+          // } else {
+          //     alert('Voucher not found.');
+          // }
+      } catch (error) {
+          console.error('Error fetching voucher:', error);
+          alert('An error occurred while fetching the voucher.');
+      }
+  };
+  
+  const handlePrevious = async (voucherNumber) => {
+    setVoucherNumber(voucherNumber-1);
+    try {
+        const response = await fetch(`http://localhost:3001/previousVoucher?voucher_no=${voucherNumber}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+  
+          let findRecord= data;
+          const lastRecord = findRecord[findRecord.length - 1]; // Get the last record
+            // Set formData using the last record
+            setVoucherNumber(lastRecord.voucher_no); 
+setFormData({
+  last_account_no: lastRecord.account_no,
+  last_debit: lastRecord.debit,
+  last_title: lastRecord.title,
+  last_credit: lastRecord.credit,
+  last_discount: lastRecord.discount,
+});
+
+          findRecord = findRecord.slice(0, -1); // Removes the last item from the array
+
+          //alert(findRecord.length); 
+          const fetchedProducts = findRecord.map(item => ({
+            title: item.title,
+            account_no: item.account_no,
+            branch_id: item.branch_id,
+            particular: item.particular,
+            debit: item.debit,
+            ref_doc_no:item.ref_doc_no,
+            credit: item.credit,
+            prv_balance: item.prv_balance,
+            discount:item.discount
+            // total:(item.rate - item.discount) * item.qty,
+          }));
+          setItems([]); // Clear old items
+          setItems(fetchedProducts);
+         // alert(fetchedProducts)
+   
+     
+      }
       
+      
+      else {
+          alert('Voucher not found.');
+      }
+        // if (response.ok) {
+        //       const data = await response.json();
+         
+        //   //alert('Voucher found.'+ data);
+         
+        //     // setFormData({
+        //     //     last_account_no: data.last_account_no,
+        //     //     last_title: data.last_title,
+        //     //     last_debit: data.last_debit,
+        //     //     last_discount: data.last_discount,
+        //     // });
+        //      setItems(data.items);
+        //      setVoucherNumber(data.voucher_no); 
+        // } else {
+        //     alert('Voucher not found.');
+        // }
+    } catch (error) {
+        console.error('Error fetching voucher:', error);
+        alert('An error occurred while fetching the voucher.');
+    }
+};
+
+    const fetchVoucher = async (voucherNumber) => {
+      try {
+          const response = await fetch(`http://localhost:3001/searchVoucher?voucher_no=${voucherNumber}`);
+          if (response.ok) {
+            const data = await response.json();
+            let findRecord= data;
+            const lastRecord = findRecord[findRecord.length - 1]; // Get the last record
+              // Set formData using the last record
+              setVoucherNumber(voucherNumber);
+  setFormData({
+    last_account_no: lastRecord.account_no,
+    last_debit: lastRecord.debit,
+    last_title: lastRecord.title,
+    last_credit: lastRecord.credit,
+    last_discount: lastRecord.discount,
+  });
+
+            findRecord = findRecord.slice(0, -1); // Removes the last item from the array
+
+            //alert(findRecord.length); 
+            const fetchedProducts = findRecord.map(item => ({
+              title: item.title,
+              account_no: item.account_no,
+              branch_id: item.branch_id,
+              particular: item.particular,
+              debit: item.debit,
+              ref_doc_no:item.ref_doc_no,
+              credit: item.credit,
+              prv_balance: item.prv_balance,
+              discount:item.discount
+              // total:(item.rate - item.discount) * item.qty,
+            }));
+         
+            setItems(fetchedProducts);
+           // alert(fetchedProducts)
+     
+       
+        }
+        
+        
+        else {
+            alert('Voucher not found.');
+        }
+          // if (response.ok) {
+          //       const data = await response.json();
+           
+          //   //alert('Voucher found.'+ data);
+           
+          //     // setFormData({
+          //     //     last_account_no: data.last_account_no,
+          //     //     last_title: data.last_title,
+          //     //     last_debit: data.last_debit,
+          //     //     last_discount: data.last_discount,
+          //     // });
+          //      setItems(data.items);
+          //      setVoucherNumber(data.voucher_no); 
+          // } else {
+          //     alert('Voucher not found.');
+          // }
+      } catch (error) {
+          console.error('Error fetching voucher:', error);
+          alert('An error occurred while fetching the voucher.');
+      }
+  };
+  
+  const handleEdit = async () => {
+    try {
+      const response = await fetch(`http://localhost:3001/editVoucher`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+
+          items,
+          ...allData, // Spread the allData object
+          voucher_no:voucherNumber,
+          last_account_no: formData.last_account_no,
+          last_debit: formData.last_debit,
+          last_title: formData.last_title,
+          last_discount:formData.last_discount,
+          voucher_year:currentDateyear,
+voucher_month:currentDateMonth,
+dt_datetime:currentDateTime,
+
+dt_date:currentDate,
+        }),
+      });
+  
+      if (response.ok) {
+        const result = await response.json();
+        alert(result.message); // Success message
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Error editing voucher:", error);
+      alert("Failed to update voucher.");
+    }
+  };
+    
   
     return (
       <div className="ap_container " >
@@ -451,21 +716,37 @@ dt_datetime:currentDateTime,
       type="text"
       className="form-control w-25"
       value={voucherNumber}
-      onChange={(e) => setVoucherNumber(e.target.value)}
+      onChange={(e) => setVoucherNumber(e.target.value)
+      
+      }
+        id="vouc-no-field"
+        onKeyDown={(e) => e.key === 'Enter' && fetchVoucher(voucherNumber)} 
+        disabled={!isModifyClicked}
     />
+   
       <input
           type="date"
-          className="form-control w-25 "
+          className="form-control w-50 "
           value={currentDate}
           onChange={(e) => setCurrentDate(e.target.value)}
         />
        
                   </div>
-                  <div className="d-flex gap-4 w-50 p-4 voch-rec-header-inner justify-content-end"  >
+                  <div className="d-flex gap-4 w-50 p-4 voch-rec-header-inner justify-content-end "  >
                      <div className="d-flex gap-4 w-50">
-        <button className="btn btn-success  bg-white txt-dec px-4 " >  <i className="bi bi-arrow-left fs-5 fw-bold"></i> </button>
-                  
-                  <button className="btn btn-secondary bg-white txt-dec px-4" >  <i className="bi bi-arrow-right fs-5 fw-bold"></i></button>
+                               {/* onClick={() => fetchVoucher(voucherNumber)}    */}
+                                  {/* onClick={handlePrevious(voucherNumber)} */}
+                                        {/* onClick={() => handleNext(voucherNumber)} */}
+                     <button  className="btn btn-success  bg-white txt-dec fix-btn-size " id="modify"  onClick={handleModifyClick} >Modify</button>
+            
+  
+
+        <button className="btn btn-success  bg-white txt-dec px-4 fix-btn-size "  id="btn-prev" onClick={() => handlePrevious(voucherNumber)}     disabled={!isModifyClicked}> 
+           <i className="bi bi-arrow-left fs-5 fw-bold"></i>
+            </button>
+     
+                  <button className="btn btn-success  bg-white txt-dec px-4 fix-btn-size " id="btn-next"  onClick={() => handleNext(voucherNumber)}     disabled={!isModifyClicked} >  <i className="bi bi-arrow-right fs-5 fw-bold"></i></button>
+            
                     </div>
          </div>
          
@@ -653,32 +934,34 @@ dt_datetime:currentDateTime,
         
 
          )} 
-        {items.length > 0 && ( 
-      <div className="container-fluid mt-5 bg-white">
-      <div className="card p-3 w-25">
+  
+ 
+ 
+    
+    
+  </div>
+
+  </div>
+
+  </div>
+  <div className="form-actions last mt-2 fixed-bottom last-form-action-with-total">
+  <div className="card p-3 w-25">
      
-        <div className="d-flex justify-content-between mb-2">
-          <span className='txt-dec'>Total:</span>
-          <span>{formData.last_debit}</span>
-        </div>
-        <div className="d-flex justify-content-between">
-          <span className='txt-dec'>Total Discount:</span>
-          <span>{formData.last_discount}</span>
-        </div>
-      </div>
-    </div>
-     )} 
-    
-    
-  </div>
-
-  </div>
-
-  </div>
-  <div className="form-actions last mt-2 fixed-bottom ">
-        <button className="btn btn-success  bg-white txt-dec" onClick={handleSave} >Save </button>
+     <div className="d-flex justify-content-between mb-2">
+       <span className='txt-dec'>Total:</span>
+       <span>{formData.last_debit}</span>
+     </div>
+     <div className="d-flex justify-content-between">
+       <span className='txt-dec'>Total Discount:</span>
+       <span>{formData.last_discount}</span>
+     </div>
+     </div>
+     <div className="d-flex justify-content-end mb-2 w-25 gap-3 align-items-center ft-btns">
+        <button className="btn btn-success  bg-white txt-dec" id="save-btn" onClick={handleSave}  disabled={isModifyClicked}>Save </button>
                   
-                  <button className="btn btn-secondary bg-white txt-dec" >Edit</button>
+                  <button className="btn btn-secondary bg-white txt-dec"  disabled={!isModifyClicked} onClick={handleEdit} 
+                  id="edit" >Edit</button>
+                  </div>
                   </div>
   </div>
       </div>

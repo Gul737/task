@@ -160,6 +160,24 @@ background-color: transparent !important;}
   /* .voch-rec-header{
 
   } */
+  .form-actions{
+    justify-content: center !important;
+    align-items: center !important;
+  }
+  .last-form-action-with-total .w-25{
+
+    width: 100%  !important;
+    
+  }
+.last-form-action-with-total .card{
+  width: 100% !important;
+}
+  .last-form-action-with-total{
+    flex-direction: column;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100%;
+  }
   .custom-upload-button {
  
     margin: 1vh 0 !important; /* Add spacing */
@@ -179,7 +197,9 @@ background-color: transparent !important;}
   }
   .voch-rec-header{
     flex-direction: column-reverse;
+
   } 
+
   .voch-rec-header-inner{
 width: 100% !important;
 flex-direction: column-reverse !important;
@@ -245,9 +265,11 @@ width: 100% !important;
   }
 }
 @media (max-width: 768px) {
-  
-  tr .w-25{
-    width: 100%;
+  .last-vouc-total-box{
+    margin-bottom: 15%;
+  }
+  tr .w-25,.selected-user .w-25{
+    width: 100% !important;
   }
   table {
     font-size: 12px;

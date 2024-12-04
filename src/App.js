@@ -7,6 +7,8 @@ import InvoiceForm from './InvoiceForm';
 import AddCustomer from './Customer';
 import NewP from './NewProduct';
 import Receive from './Receive_voucher'
+import EmployeeRights from './Select_Employee';
+
 
 
 
@@ -14,7 +16,8 @@ function App() {
     return (
         <Router>
             <Routes>
-                <Route path="/" element={<LoginForm />} />
+            <Route path="/" element={<EmployeeRights/>} />
+                {/* <Route path="/" element={<LoginForm />} /> */}
                 <Route path="/login" element={<LoginForm />} />
                 <Route path="/home" element={<MyNavBar />} /> 
                 <Route path="/invoice" element={<InvoiceForm />} />

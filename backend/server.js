@@ -1275,9 +1275,11 @@ app.get('/api/search-items', async (req, res) => {
         await pool.request()
           .input("voucher_no", sql.Decimal(18, 0), voucher_no)
           .input("voucher_type", sql.Int, voucher_type)
-          .input("account_no", sql.Decimal(18, 0), item.account_no)
-          .input("branch_id", sql.VarChar(50), item.branch_id)
           .input("wk_no", sql.Int, wk_no)
+          .input("branch_id", sql.VarChar(50), item.branch_id)
+          .input("account_no", sql.Decimal(18, 0), item.account_no)
+         
+        
           .input("voucher_year", sql.Int, voucher_year)
           .input("voucher_month", sql.Int, voucher_month)
           .input("dt_datetime", sql.DateTime,dt_datetime)
@@ -1333,8 +1335,447 @@ const manualItem=true;
       res.status(500).json({ error: "Failed to save voucher." });
     }
   });
-  
+  app.get('/voucher', async (req, res) => {
+    const { voucher_no, direction } = req.query; // `direction` will be 'next' or 'previous'
+    const query = direction === 'next'
+        ? `SELECT TOP 1 * FROM  voucher_master WHERE voucher_no > @voucher_no ORDER BY voucher_no ASC`
+        : `SELECT TOP 1 * FROM  voucher_master where voucher_no < @voucher_no ORDER BY voucher_no DESC`;
+
+    try {
+        const pool = await sql.connect(config);
+        const result = await pool.request()
+            .input('voucher_no', sql.Int, voucher_no)
+            .query(query);
+
+        // if (result.recordset.length === 0) {
+        //     res.status(404).json({ message: 'No more records' });
+        // } else {
+            res.json(result.recordset[0]);
+        // }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Database query failed' });
+    }
+});
+
+app.get('/searchVoucher', async (req, res) => {
+  const { voucher_no } = req.query;
+
+  try {
+      const pool = await sql.connect(config);
+      const result = await pool.request()
+          .input('voucher_no', sql.Int, voucher_no)
+          .query('SELECT * FROM  voucher_master WHERE voucher_no = @voucher_no   ORDER BY  s_no ASC');
+//console.log("RESULT Found"+ result)
+      if (result.recordset.length === 0) {
+           res.status(404).json({ message: 'Voucher not found' });
+       } else {
+          res.json(result.recordset);
+      }
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Database query failed' });
+  }
+});
+// app.put('/editVoucher', async (req, res) => {
+// // Query param to identify the voucher
+//   const {
+//     voucher_no ,
+//     last_account_no, last_debit, last_title, last_discount,
+//     voucher_year, voucher_month, dt_datetime, items
+//   } = req.body; // Data to update
+
+//   try {
+//     const pool = await sql.connect(config);
+
+//     // Optional: Clear old items if replacing
+//     await pool.request()
+//       .input('voucher_no', sql.Int, voucher_no)
+//       .query('DELETE FROM  voucher_master  WHERE voucher_no = @voucher_no');
+
+//     // Update the voucher master data
+//     await pool.request()
+//       .input('voucher_no', sql.Int, voucher_no)
+//       .input('account_no', sql.Int, last_account_no)
+//       .input('debit', sql.Float, last_debit)
+//       .input('title', sql.VarChar, last_title)
+//       .input('discount', sql.Float, last_discount)
+//       .input('voucher_year', sql.Int, voucher_year)
+//       .input('voucher_month', sql.Int, voucher_month)
+//       .input('dt_datetime', sql.DateTime, dt_datetime)
+//       .query(`
+//         UPDATE voucher_master
+//         SET 
+//             account_no = @account_no,
+//             debit = @debit,
+//             title = @title,
+//             discount = @discount,
+//             voucher_year = @voucher_year,
+//             voucher_month = @voucher_month,
+//             dt_datetime = @dt_datetime
+//         WHERE voucher_no = @voucher_no
+//       `);
+
+//     // Insert updated items
+//     for (const item of items) {
+//       await pool.request()
+//         .input('voucher_no', sql.Int, voucher_no)
+//         .input('account_no', sql.Int, item.account_no)
+//         .input('particular', sql.VarChar, item.particular)
+//         .input('title', sql.VarChar, item.title)
+//         .input('debit', sql.Float, item.debit)
+//         .input('credit', sql.Float, item.credit)
+//         .input('ref_doc_no', sql.Int, item.ref_doc_no)
+//         .input('branch_id', sql.VarChar, item.branch_id)
+//         .input('discount', sql.Float, item.discount)
+//         .input('prv_balance', sql.Float, item.prv_balance)
+//         .query(`
+//           INSERT INTO voucher_master (voucher_no, account_no, particular, title,
+//                                      debit, credit, ref_doc_no, branch_id, discount, prv_balance)
+//           VALUES (@voucher_no, @account_no, @particular, @title,
+//                   @debit, @credit, @ref_doc_no, @branch_id, @discount, @prv_balance)
+//         `);
+//     }
+
+//     res.json({ message: 'Voucher updated successfully' });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: 'Failed to update voucher data' });
+//   }
+// });
+
+
   // Start the server
+  
+   app.put('/editVoucher', async (req, res) => {
+        const {
+          voucher_no,
+          voucher_type,
+    
+          wk_no,
+     particular,
+      ref_doc_no,
+          last_account_no,
+          last_debit,
+          last_title,
+          last_discount,
+          voucher_year,
+          voucher_month,
+          dt_datetime,
+      dt_date,
+          items
+        } = req.body;
+      
+        try {
+          const pool = await sql.connect(config);
+      
+          // Optional: Clear old items if replacing
+          await pool.request()
+            .input('voucher_no', sql.Int, voucher_no)
+            .query('DELETE FROM voucher_master WHERE voucher_no = @voucher_no');
+       console.log("Updated Voucher no "+voucher_no)
+   
+      items.sort((a, b) => a.s_no - b.s_no);
+      // Insert items into voucher_master
+      let s_no = 1; // Initialize serial number
+      for (const item of items) {
+        const query = `
+          INSERT INTO voucher_master 
+          (voucher_no, voucher_type, account_no, branch_id, wk_no, voucher_year, voucher_month, dt_datetime,
+          s_no, debit, credit, particular, title, dt_date, ref_doc_no, prv_balance, discount) 
+          VALUES 
+          (@voucher_no, @voucher_type, @account_no, @branch_id, @wk_no, @voucher_year, @voucher_month,@dt_datetime,
+          @s_no, @debit, @credit, @particular, @title, @dt_date, @ref_doc_no, @prv_balance, @discount)
+        `;
+  
+        await pool.request()
+          .input("voucher_no", sql.Decimal(18, 0), voucher_no)
+          .input("voucher_type", sql.Int, voucher_type)
+          .input("wk_no", sql.Int, wk_no)
+          .input("branch_id", sql.VarChar(50), item.branch_id)
+          .input("account_no", sql.Decimal(18, 0), item.account_no)
+         
+        
+          .input("voucher_year", sql.Int, voucher_year)
+          .input("voucher_month", sql.Int, voucher_month)
+          .input("dt_datetime", sql.DateTime,dt_datetime)
+       
+          .input("s_no", sql.Int, s_no++) // Increment s_no for each item
+          .input("debit", sql.Decimal(18, 0), item.debit)
+          .input("credit", sql.Decimal(18, 0), item.credit)
+          .input("particular", sql.VarChar(250), item.particular)
+          .input("title", sql.VarChar(250), item.title)
+          .input("dt_date", sql.DateTime, dt_date)
+          .input("ref_doc_no", sql.Decimal(18, 0), item.ref_doc_no)
+          .input("prv_balance", sql.Decimal(18, 0), item.prv_balance)
+          .input("discount", sql.Decimal(18, 2), item.discount)
+          .query(query);
+       
+      }
+const manualItem=true;
+      // If manual item is provided, insert it as well
+      if (manualItem) {
+        const query = `
+          INSERT INTO voucher_master 
+          (voucher_no, voucher_type, account_no, branch_id, wk_no, voucher_year, voucher_month,dt_datetime,
+          s_no, debit, credit, particular, title, dt_date, ref_doc_no, prv_balance, discount) 
+          VALUES 
+          (@voucher_no, @voucher_type, @account_no, @branch_id, @wk_no, @voucher_year, @voucher_month,@dt_datetime,
+          @s_no, @debit, @credit, @particular, @title, @dt_date, @ref_doc_no, @prv_balance, @discount)
+        `;
+  
+        await pool.request()
+          .input("voucher_no", sql.Decimal(18, 0), voucher_no)
+          .input("voucher_type", sql.Int, voucher_type)
+          .input("account_no", sql.Decimal(18, 0), last_account_no)
+          .input("branch_id", sql.VarChar(50), branch_G)
+          .input("wk_no", sql.Int, wk_no)
+          .input("voucher_year", sql.Int, voucher_year)
+          .input("voucher_month", sql.Int, voucher_month)
+          .input("dt_datetime", sql.DateTime,dt_datetime)
+          .input("s_no", sql.Int, s_no++) // Increment s_no for the manual item
+          .input("debit", sql.Decimal(18, 0),  last_debit)
+          .input("credit", sql.Decimal(18, 0), 0)
+          .input("particular", sql.VarChar(250), particular || 'CASH RECEIVED')
+          .input("title", sql.VarChar(250), last_title)
+          .input("dt_date", sql.DateTime, dt_date)
+          .input("ref_doc_no", sql.Decimal(18, 0), ref_doc_no)
+          .input("prv_balance", sql.Decimal(18, 0), 0)
+          .input("discount", sql.Decimal(18, 2),  last_discount)
+          .query(query);
+      }
+     
+      
+          res.json({ message: 'Voucher updated successfully' });
+        } catch (error) {
+          console.error("Error updating voucher:", error);
+          res.status(500).json({ error: 'Failed to update voucher data' });
+        }
+      });
+    app.get('/previousVoucher', async (req, res) => {
+      const { voucher_no } = req.query;
+    
+      try {
+          const pool = await sql.connect(config);
+          const result = await pool.request()
+              .input('voucher_no', sql.Int, voucher_no)
+              .query(' SELECT *  FROM voucher_master WHERE voucher_no = (SELECT MAX(voucher_no) FROM voucher_master  WHERE voucher_no < @voucher_no) ORDER BY s_no ASC');
+              // .query('SELECT * FROM voucher_master WHERE voucher_no < @voucher_no ORDER BY voucher_no DESC, s_no ASC');
+    //console.log("RESULT Found"+ result)
+          if (result.recordset.length === 0) {
+               res.status(404).json({ message: 'Voucher not found' });
+           } else {
+              res.json(result.recordset);
+          }
+      } catch (error) {
+          console.error(error);
+          res.status(500).json({ error: 'Database query failed' });
+      }
+    });
+    app.get('/nextVoucher', async (req, res) => {
+      const { voucher_no } = req.query;
+    
+      try {
+          const pool = await sql.connect(config);
+          const result = await pool.request()
+              .input('voucher_no', sql.Int, voucher_no)
+              // .query('SELECT TOP 1 * FROM voucher_master WHERE voucher_no > @voucher_no ORDER BY voucher_no ASC, s_no ASC');
+              .query('SELECT * FROM voucher_master WHERE voucher_no = (SELECT MIN(voucher_no)  FROM voucher_master  WHERE voucher_no > @voucher_no)ORDER BY s_no ASC');
+    //console.log("RESULT Found"+ result)
+          if (result.recordset.length === 0) {
+               res.status(404).json({ message: 'Voucher not found' });
+           } else {
+              res.json(result.recordset);
+          }
+      } catch (error) {
+          console.error(error);
+          res.status(500).json({ error: 'Database query failed' });
+      }
+    });
+    app.get("/get-employees", async (req, res) => {
+      try {
+        const pool = await sql.connect(config);
+        const result = await pool.request().query(
+          "SELECT emp_code, emp_name FROM login_info"
+        );
+        res.json(result.recordset);
+      } catch (err) {
+        console.error(err);
+        res.status(500).send("Error fetching employees");
+      }
+    });
+    app.get('/get-rights/:emp_code', async (req, res) => {
+      const salesman_code = req.params.emp_code;
+    
+      try {
+        const pool = await sql.connect(config);
+        const query = `
+          SELECT * FROM tblrights WHERE salesman_code = @salesman_code;
+        `;
+        
+        // Execute the query with parameterized query to prevent SQL injection
+        const result = await pool.request()
+          .input('salesman_code', sql.Int, salesman_code)  // Bind the emp_code as a parameter
+          .query(query);
+    
+        res.json(result.recordset); // Send the rights data in the response
+        console.log(result.recordset)
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Database error' });
+      }
+    });
+    app.post('/save-rights', async (req, res) => {
+      try {
+        const {
+          salesman_code, 
+          sale, 
+          sale_modify, 
+          sale_return, 
+          sale_return_modify,
+          purchase,
+          purchase_modify,
+          purchase_return,
+          purchase_return_modify,
+          customer,
+          suplier,
+          cust_modify,
+          supp_modify,
+          jv,crm,voucher,
+          bank,item,
+          cost,
+          item_list,customer_list,supplier_list,
+          accounts,reports,pay_vouchers,adjustment,slip,
+          slip_modify,pay_vouchers_m,voucher_m,quotation,quotation_m,po,po_m,
+          item_modify,
+          expence,
+          cost_increase,
+          cr_date_only,
+          chng_inv_date,
+          credit_inv,
+          qt_verify,
+          pur_date,
+          chng_date_cr,
+          md_cr_cr_day,
+          chng_date_pay,
+          md_pay_cr_day,
+          chng_date_exp,
+          exp_modify,
+          chng_date_bcr,
+          md_bcr_cr_day,
+          chng_date_bpay,
+          md_bpay_cr_day,
+          jv_modify,
+          rd_slip_verify,
+          chq_manger,
+          chq_pay,
+          chq_rec,
+          view_drawing,
+          view_exp,
+          inv_receiving,
+          bank_rec,
+          bank_rec_m,
+          bank_pay,
+          bank_pay_m,
+          view_other_branches,
+          fund_transfer,
+          fund_transfer_verify,
+          emp_grp
+        } = req.body;
+    
+        const pool = await sql.connect(config);
+        const checkQuery = `SELECT COUNT(*) AS count FROM dbo.tblrights WHERE salesman_code = @salesman_code`;
+        const result = await pool.request()
+          .input('salesman_code', sql.Decimal(18, 0), salesman_code)
+          .query(checkQuery);
+    
+        const query = result.recordset[0].count > 0 
+          ? `UPDATE dbo.tblrights SET sale = @sale, sale_modify = @sale_modify, sale_return = @sale_return, sale_return_modify = @sale_return_modify, purchase = @purchase, purchase_modify = @purchase_modify, purchase_return = @purchase_return, purchase_return_modify = @purchase_return_modify, customer = @customer, suplier = @suplier, cust_modify = @cust_modify, supp_modify = @supp_modify, jv = @jv, crm = @crm, voucher = @voucher, bank = @bank, item = @item, cost = @cost, item_list = @item_list, customer_list = @customer_list, supplier_list = @supplier_list, accounts = @accounts, reports = @reports, pay_vouchers = @pay_vouchers, adjustment = @adjustment, slip = @slip, slip_modify = @slip_modify, pay_vouchers_m = @pay_vouchers_m, voucher_m = @voucher_m, quotation = @quotation, quotation_m = @quotation_m, po = @po, po_m = @po_m,emp_grp=@emp_grp WHERE salesman_code = @salesman_code` 
+          : `INSERT INTO dbo.tblrights (salesman_code, sale, sale_modify, sale_return, sale_return_modify, purchase, purchase_modify, purchase_return, purchase_return_modify, customer, suplier, cust_modify, supp_modify, jv, crm, voucher, bank, item, cost, item_list, customer_list, supplier_list, accounts, reports, pay_vouchers, adjustment, slip, slip_modify, pay_vouchers_m, voucher_m, quotation, quotation_m, po, po_m,emp_grp) 
+             VALUES (@salesman_code, @sale, @sale_modify, @sale_return, @sale_return_modify, @purchase, @purchase_modify, @purchase_return, @purchase_return_modify, @customer, @suplier, @cust_modify, @supp_modify, @jv, @crm, @voucher, @bank, @item, @cost, @item_list, @customer_list, @supplier_list, @accounts, @reports, @pay_vouchers, @adjustment, @slip, @slip_modify, @pay_vouchers_m, @voucher_m, @quotation, @quotation_m, @po, @po_m,@emp_grp)`;
+    
+        await pool.request()
+          .input('salesman_code', sql.Decimal(18, 0), salesman_code || 0)
+          .input('sale', sql.Int, sale || 0)
+          .input('sale_modify', sql.Int, sale_modify || 0)
+          .input('sale_return', sql.Int, sale_return || 0)
+          .input('sale_return_modify', sql.Int, sale_return_modify || 0)
+          .input('purchase', sql.Int, purchase || 0)
+          .input('purchase_modify', sql.Int, purchase_modify || 0)
+          .input('purchase_return', sql.Int, purchase_return || 0)
+          .input('purchase_return_modify', sql.Int, purchase_return_modify || 0)
+          .input('customer', sql.Int, customer || 0)
+          .input('suplier', sql.Int, suplier || 0)
+          .input('cust_modify', sql.Int, cust_modify || 0)
+          .input('supp_modify', sql.Int, supp_modify || 0)
+          .input('jv', sql.Int, jv || 0)
+          .input('crm', sql.Int, crm || 0)
+          .input('voucher', sql.Int, voucher || 0)
+          .input('bank', sql.Int, bank || 0)
+          .input('item', sql.Int, item || 0)
+          .input('cost', sql.Int, cost || 0)
+          .input('item_list', sql.Int, item_list || 0)
+          .input('customer_list', sql.Int, customer_list || 0)
+          .input('supplier_list', sql.Int, supplier_list || 0)
+          .input('accounts', sql.Int, accounts || 0)
+          .input('reports', sql.Int, reports || 0)
+          .input('pay_vouchers', sql.Int, pay_vouchers || 0)
+          .input('adjustment', sql.Int, adjustment || 0)
+          .input('slip', sql.Int, slip || 0)
+          .input('slip_modify', sql.Int, slip_modify || 0)
+          .input('pay_vouchers_m', sql.Int, pay_vouchers_m || 0)
+          .input('voucher_m', sql.Int, voucher_m || 0)
+          .input('quotation', sql.Int, quotation || 0)
+          .input('quotation_m', sql.Int, quotation_m || 0)
+          .input('po', sql.Int, po || 0)
+          .input('po_m', sql.Int, po_m || 0)
+          .input('item_modify', sql.Int, item_modify || 0)
+.input('expence', sql.Int, expence || 0)
+.input('cost_increase', sql.Int, cost_increase || 0)
+.input('cr_date_only', sql.Int, cr_date_only || 0)
+.input('chng_inv_date', sql.Int, chng_inv_date || 0)
+.input('credit_inv', sql.Int, credit_inv || 0)
+.input('qt_verify', sql.Int, qt_verify || 0)
+.input('pur_date', sql.Int, pur_date || 0)
+.input('chng_date_cr', sql.Int, chng_date_cr || 0)
+.input('md_cr_cr_day', sql.Int, md_cr_cr_day || 0)
+.input('chng_date_pay', sql.Int, chng_date_pay || 0)
+.input('md_pay_cr_day', sql.Int, md_pay_cr_day || 0)
+.input('chng_date_exp', sql.Int, chng_date_exp || 0)
+.input('exp_modify', sql.Int, exp_modify || 0)
+.input('chng_date_bcr', sql.Int, chng_date_bcr || 0)
+.input('md_bcr_cr_day', sql.Int, md_bcr_cr_day || 0)
+.input('chng_date_bpay', sql.Int, chng_date_bpay || 0)
+.input('md_bpay_cr_day', sql.Int, md_bpay_cr_day || 0)
+.input('jv_modify', sql.Int, jv_modify || 0)
+.input('rd_slip_verify', sql.Int, rd_slip_verify || 0)
+.input('chq_manger', sql.Int, chq_manger || 0)
+.input('chq_pay', sql.Int, chq_pay || 0)
+.input('chq_rec', sql.Int, chq_rec || 0)
+.input('view_drawing', sql.Int, view_drawing || 0)
+.input('view_exp', sql.Int, view_exp || 0)
+.input('inv_receiving', sql.Int, inv_receiving || 0)
+.input('bank_rec', sql.Int, bank_rec || 0)
+.input('bank_rec_m', sql.Int, bank_rec_m || 0)
+.input('bank_pay', sql.Int, bank_pay || 0)
+.input('bank_pay_m', sql.Int, bank_pay_m || 0)
+.input('view_other_branches', sql.Int, view_other_branches || 0)
+.input('fund_transfer', sql.Int, fund_transfer || 0)
+.input('fund_transfer_verify', sql.Int, fund_transfer_verify || 0)
+.input('emp_grp', sql.Int, emp_grp || 0)
+
+          .query(query);
+    
+        res.status(200).json({ message: result.recordset[0].count > 0 ? 'Rights updated successfully!' : 'Rights inserted successfully!' });
+      } catch (error) {
+        console.error('Query Error: ', error);
+        res.status(500).json({ error: 'Failed to save rights' });
+      }
+    });
+    
+    
+
+
   app.listen(3001, () => {
     console.log('Backend server is running on port 3001');
   });

@@ -90,16 +90,16 @@
 } */
 .form-actions {
   display: flex;
-  justify-content: center; 
+   justify-content: end; 
   gap: 1%;
-  width: 100%;
-  padding: 20px;
+  /* width: 100%; */
+  padding:5px 50px;
   position: fixed;
   bottom: 0; 
   z-index: 100;
   box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); 
 }
-.form-actions button {
+.form-actions button,.fix-btn-size {
   padding: 10px 20px; /* Increases button size */
   font-size: 20px; /* Larger text */
   height: 50px; /* Ensures consistent height */
@@ -110,7 +110,7 @@
   transition: background-color 0.3s, transform 0.2s, box-shadow 0.2s;
 }
 
-.form-actions button:hover ,.add:hover  {
+.form-actions button:hover ,.add:hover  ,.last-btn:hover{
   background-color: #0056b3; /* Darker shade on hover */
   transform: translateY(-2px); /* Slight lift effect */
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Adds a shadow */
