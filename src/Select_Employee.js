@@ -99,13 +99,20 @@ function Select_Employee() {
       ],
       
   "New Rights": [  // Add the new rights here
+    { name: "CRM", checked: false },
+    { name: "Reports", checked: false },
+    { name: "Accounts", checked: false },
+    { name: "Purchase Order", checked: false },
+    { name: "Purchase Order Modify", checked: false },
+    { name: "View Others Accounts Group", checked: false },
+    { name: "View Expense Group", checked: false },
     { name: "View Other Branches", checked: false },
     { name: "Fund Transfer", checked: false },
     { name: "Fund Transfer Verify", checked: false },
     { name: "Employee Group PO", checked: false },
-    { name: "PO Modify", checked: false },
-    { name: "Accounts", checked: false },
-    { name: "Reports", checked: false },
+
+  
+  
   ]
     });
   
@@ -230,7 +237,7 @@ const handleUpdate = async () => {
     purchase_return: checkboxData["Purchase Rights"][3].checked ? 1 : 0,
     purchase_return_modify: checkboxData["Purchase Rights"][4].checked ? 1 : 0,
 
-    crm: checkboxData["Voucher Rights"][0].checked ? 1 : 0,
+    voucher: checkboxData["Voucher Rights"][0].checked ? 1 : 0,
     pay_vouchers_m: checkboxData["Voucher Rights"][1].checked ? 1 : 0,
     chng_date_cr: checkboxData["Voucher Rights"][2].checked ? 1 : 0,
     md_cr_cr_day: checkboxData["Voucher Rights"][3].checked ? 1 : 0,
@@ -272,13 +279,18 @@ const handleUpdate = async () => {
     supp_modify: checkboxData["AC Receivable / Payable"][4].checked ? 1 : 0,
     supplier_list: checkboxData["AC Receivable / Payable"][5].checked ? 1 : 0,
 
-    view_other_branches: checkboxData["New Rights"][0].checked ? 1 : 0,
-    fund_transfer: checkboxData["New Rights"][1].checked ? 1 : 0,
-    fund_transfer_verify: checkboxData["New Rights"][2].checked ? 1 : 0,
-    emp_grp: checkboxData["New Rights"][3].checked ? 1 : 0,
-    po_modify: checkboxData["New Rights"][4].checked ? 1 : 0,
-    accounts: checkboxData["New Rights"][5].checked ? 1 : 0,
-    reports: checkboxData["New Rights"][6].checked ? 1 : 0,
+    crm: checkboxData["New Rights"][0].checked ? 1 : 0,
+    reports: checkboxData["New Rights"][1].checked ? 1 : 0,
+    accounts: checkboxData["New Rights"][2].checked ? 1 : 0,
+    po: checkboxData["New Rights"][3].checked ? 1 : 0,
+    po_m: checkboxData["New Rights"][4].checked ? 1 : 0,
+    //: checkboxData["New Rights"][6].checked ? 1 : 0,
+    view_exp : checkboxData["New Rights"][6].checked ? 1 : 0,
+    view_other_branches: checkboxData["New Rights"][7].checked ? 1 : 0,
+    fund_transfer: checkboxData["New Rights"][8].checked ? 1 : 0,
+    fund_transfer_verify: checkboxData["New Rights"][9].checked ? 1 : 0,
+    emp_grp: checkboxData["New Rights"][10].checked ? 1 : 0,
+   
   };
 
   console.log("Form Data:", formData);
@@ -435,10 +447,10 @@ const handleUpdate = async () => {
 <div>
   <div className='d-flex gap-3'>
     <label>
-      <input type="checkbox" /> CRM
+      <input type="checkbox"  checked={checkboxData["New Rights"][0].checked}  onChange={(e) => handleCheckboxChange("New Rights", "CRM", e.target.checked)}/> CRM
     </label>
     <label>
-      <input type="checkbox" /> Reports
+      <input type="checkbox" checked={checkboxData["New Rights"][1].checked}   onChange={(e) => handleCheckboxChange("New Rights", "Reports", e.target.checked)}/> Reports
     </label>
   </div>
 
@@ -446,15 +458,15 @@ const handleUpdate = async () => {
   {/* Other Checkboxes in One Column */}
  
     <label>
-      <input type="checkbox" /> Accounts
+      <input type="checkbox" checked={checkboxData["New Rights"][2].checked}    onChange={(e) => handleCheckboxChange("New Rights", "Accounts", e.target.checked)} /> Accounts
     </label>
     <br />
     <label>
-      <input type="checkbox" /> Purchase Order
+      <input type="checkbox" checked={checkboxData["New Rights"][3].checked}   onChange={(e) => handleCheckboxChange("New Rights", "Purchase Order", e.target.checked)}/> Purchase Order
     </label>
     <br />
     <label>
-      <input type="checkbox" /> Purchase Order Modify
+      <input type="checkbox" checked={checkboxData["New Rights"][4].checked}   onChange={(e) => handleCheckboxChange("New Rights", "Purchase Order Modify", e.target.checked)} /> Purchase Order Modify
     </label>
     <br />
     <label>
@@ -462,16 +474,16 @@ const handleUpdate = async () => {
     </label>
     <br />
     <label>
-      <input type="checkbox" /> View Expense Group
+      <input type="checkbox" checked={checkboxData["New Rights"][6].checked}    onChange={(e) => handleCheckboxChange("New Rights", "View Expense Group", e.target.checked)}  /> View Expense Group
     </label>
     <br />
     <label>
-      <input type="checkbox"  checked={checkboxData["New Rights"][0].checked}
+      <input type="checkbox"  checked={checkboxData["New Rights"][7].checked}
           onChange={(e) => handleCheckboxChange("New Rights", "View Other Branches", e.target.checked)}/> View Other Branch
     </label>
     <br />
     <label>
-      <input type="checkbox"  checked={checkboxData["New Rights"][1].checked}
+      <input type="checkbox"  checked={checkboxData["New Rights"][8].checked}
           onChange={(e) => handleCheckboxChange("New Rights", "Fund Transfer", e.target.checked)}
        /> Fund Transfer
     </label>
@@ -480,12 +492,12 @@ const handleUpdate = async () => {
   {/* Fund Transfer Verify and View Employee Group on Same Line */}
   <div className='d-flex gap-3'>
     <label>
-      <input type="checkbox" checked={checkboxData["New Rights"][2].checked}
+      <input type="checkbox" checked={checkboxData["New Rights"][9].checked}
         onChange={(e) => handleCheckboxChange("New Rights", "Fund Transfer Verify", e.target.checked)}
     /> Fund Transfer Verify
     </label>
     <label>
-      <input type="checkbox"   checked={checkboxData["New Rights"][3].checked}
+      <input type="checkbox"   checked={checkboxData["New Rights"][10].checked}
         onChange={(e) => handleCheckboxChange("New Rights", "Employee Group PO", e.target.checked)}
    /> View Employee Group
     </label>
