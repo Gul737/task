@@ -113,8 +113,6 @@ app.get('/branch_info', async (req, res) => {
   } catch (err) {
       console.error('Query Error: ', err);
       res.status(500).send(err.message);
-  } finally {
-      // await sql.close(); // Close the database connection
   }
 });
 // // API to fetch salesmen (from employee_info)
@@ -122,7 +120,8 @@ app.get('/branch_info', async (req, res) => {
      try {
       const result = await pool.request()
   .input('branch_id', sql.VarChar, branch_G)
-  .query("SELECT emp_name,emp_code FROM employee_info WHERE branch_id = @branch_id");
+  // .query("SELECT emp_name,emp_code FROM employee_info WHERE branch_id = @branch_id");
+  .query("SELECT emp_name,emp_code FROM employee_info");
             //  console.log("Salesmen Field Done: " + JSON.stringify(result.recordset, null, 2));
 
    res.json(result.recordset);
@@ -137,7 +136,9 @@ app.get('/branch_info', async (req, res) => {
       const pool = await sql.connect(config);
       const result = await pool.request()
         .input('branch_code', sql.VarChar, branch_code) // Pass branch_code to the query
-        .query('SELECT emp_code, emp_name FROM employee_info WHERE branch_id = @branch_code'); // Filter by branch_code
+        .query('SELECT emp_code, emp_name FROM employee_info WHERE branch_id = @branch_code'); 
+        //.query('SELECT emp_code, emp_name FROM employee_info'); 
+      
       
       res.json(result.recordset); // Return filtered data
     } catch (err) {
@@ -1799,13 +1800,367 @@ const manualItem=true;
        // .query("SELECT MAX(slip_no) AS sp FROM  slip_master WHERE status = 2 and wk_no=1 and branch_id = @branch_id");
     
         //console.log('SQL Query Result:', result.recordset);
-        let newInvoiceNumber = (result.recordset[0]?.inv === null) ? 1 : result.recordset[0].inv + 1;
+        let newInvoiceNumber = (result.recordset[0]?.sp === null) ? 1 : result.recordset[0].sp + 1;
     
         res.json({ invoice_number: newInvoiceNumber });
         //console.log(newInvoiceNumber);
       } catch (err) {
         console.error('Query Error: ', err);
         res.status(500).json({ error: err.message });
+      }
+    });
+    app.post('/save-slip', async (req, res) => {
+      const {
+      slip_no, status, wk_no, branch_id, branch_from, branch_to, verification_from, varification_from_date, 
+      verification_to, varification_to_date, branch_from_desc, branch_to_desc, salesman_code, salesman_name, 
+      remarks, slip_date, slip_datetime, trans_status, verified_by
+,
+slip_code, s_no, product_code, product_desc, rate, cost, qty,  case_qty, d_branch_from, d_branch_to,items
+
+      } = req.body;
+    
+      try {
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
+    
+        // Insert into invoice_master table
+        const requestMaster = new sql.Request(transaction);
+        await requestMaster
+        
+        .input('slip_no',sql.Decimal(18, 0),  slip_no||1)
+          .input('branch_id', sql.VarChar(50), branch_id ||'000')
+          .input('wk_no', sql.Int, wk_no||1)
+          .input('status', sql.Int, 2)
+          .input('branch_from', sql.VarChar(250),  branch_from)
+          .input('branch_to', sql.VarChar(250),  branch_to)
+          .input('branch_from_desc', sql.VarChar(250),    branch_from_desc)
+          .input('branch_to_desc', sql.VarChar(250),    branch_to_desc)
+       
+          .input('salesman_name', sql.VarChar(250), salesman_name)
+          .input('remarks', sql.VarChar(250), remarks)
+          .input('salesman_code', sql.Decimal(18, 0), salesman_code)
+      
+        //  .input('slip_date', sql.DateTime, slip_date)
+       
+    
+          // .input('slip_datetime',sql.DateTime,slip_datetime)
+        
+          .query(`
+            INSERT INTO slip_master (
+              slip_no, branch_id, wk_no,status, branch_from,branch_to ,branch_from_desc, branch_to_desc, 
+              salesman_name, remarks, salesman_code
+            ) 
+            VALUES (
+              @slip_no, @branch_id, @wk_no, 2,@branch_from, @branch_to,@branch_from_desc, @branch_to_desc, 
+              @salesman_name, @remarks, @salesman_code
+            )
+          `);
+          
+     
+          // `);
+    // Insert each item into `invoice_detail`
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+    
+
+
+      const requestDetails = new sql.Request(transaction);
+      await requestDetails
+        .input('slip_code', sql.Decimal(18, 0), slip_code||1) // Assuming `inv_no` serves as `inv_code`
+        .input('wk_no', sql.Int, wk_no)
+        .input('status', sql.Int, 2)
+      .input('branch_id', sql.VarChar(50), branch_id||"000")
+        .input('s_no', sql.Int, i + 1) // Auto-incrementing serial number
+        .input('product_code', sql.Decimal(18, 2), item.product_code)
+        .input('product_desc', sql.VarChar(500), item.product_desc)
+        .input('rate', sql.Decimal(18, 2), item.rate)
+        .input('d_branch_from', sql.VarChar(500), d_branch_from)
+        .input('d_branch_to', sql.VarChar(500),  d_branch_to)
+        .input('qty', sql.Decimal(18, 3), item.qty)
+        .input('case_qty', sql.Decimal(18, 0), item.case_qty || 1) // Optional field
+    
+        .input('cost', sql.Decimal(18, 2), item. cost)
+        .input('remarks', sql.VarChar(250), remarks)
+        .query(`
+          INSERT INTO slip_detail (
+            slip_code,  wk_no,status,branch_id, s_no, product_code, product_desc, rate, d_branch_from, d_branch_to, qty, case_qty, cost
+            ,remarks
+          )
+          VALUES (
+            @slip_code,@wk_no,@status, @branch_id, @s_no, @product_code, @product_desc, @rate, @d_branch_from, @d_branch_to, @qty, @case_qty, @cost
+            ,@remarks
+          )
+        `);
+    }
+        await transaction.commit();
+    
+        res.json({ success: true, message: 'Slip and details saved successfully.' });
+      } catch (err) {
+        console.error('Insert Query Error:', err);
+        res.status(500).json({ success: false, message: 'Error saving invoice and details.' });
+      }
+    
+    });
+    app.post('/get-previous-slip', async (req, res) => {
+      const { slip_no } = req.body;
+    
+      try {
+        const result = await pool.request()
+          .input('slip_no', sql.Decimal(18, 0), slip_no)
+          .query(`
+        SELECT 
+        slip_master.*,   
+          slip_detail.slip_code,  -- Fixed the alias issue for slip_code
+    
+    slip_detail.s_no,  -- Added correct table reference for s_no
+    slip_detail.product_code,
+    slip_detail.product_desc,
+    slip_detail.rate,
+    slip_detail.cost,
+    slip_detail.qty,
+    
+    slip_detail.case_qty,
+  
+    slip_detail.d_branch_from,
+    slip_detail.d_branch_to
+    
+ 
+   
+    FROM 
+        slip_master
+    JOIN 
+        slip_detail ON slip_master.slip_no = slip_detail.slip_code
+    WHERE 
+     slip_master.slip_no = (
+                SELECT MAX(slip_no)
+                FROM slip_master
+                WHERE slip_no < @slip_no
+              );
+        
+    
+            
+          `);
+    
+        if (result.recordset.length > 0) {
+          res.json({ success: true, invoice: result.recordset });
+        } else {
+          res.json({ success: false, message: 'No previous slip found.' });
+        }
+      } catch (err) {
+        console.error('Error fetching previous slip:', err);
+        res.status(500).json({ success: false, message: 'Error fetching previous slip.' });
+      }
+    });
+    app.post('/get-next-slip', async (req, res) => {
+      const { slip_no } = req.body;
+    
+      try {
+        const result = await pool.request()
+          .input('slip_no', sql.Decimal(18, 0), slip_no)
+          .query(`
+            SELECT 
+              slip_master.*,   
+                slip_detail.slip_code,  -- Fixed the alias issue for slip_code
+    
+    slip_detail.s_no,  -- Added correct table reference for s_no
+    slip_detail.product_code,
+    slip_detail.product_desc,
+    slip_detail.rate,
+    slip_detail.cost,
+    slip_detail.qty,
+    
+    slip_detail.case_qty,
+
+    slip_detail.d_branch_from,
+    slip_detail.d_branch_to
+    
+            FROM 
+              slip_master
+            JOIN 
+              slip_detail ON slip_master.slip_no = slip_detail.slip_code
+            WHERE 
+              slip_master.slip_no = (
+                SELECT MIN(slip_no)
+                FROM slip_master
+                WHERE slip_no > @slip_no
+              );
+          `);
+    
+        if (result.recordset.length > 0) {
+          res.json({ success: true, invoice: result.recordset });
+        } else {
+          res.json({ success: false, message: 'No next slip found.' });
+        }
+      } catch (err) {
+        console.error('Error fetching next invoice:', err);
+        res.status(500).json({ success: false, message: 'Error fetching next slip.' });
+      }
+    });
+    app.post('/modify-slip', async (req, res) => {
+      const {
+        slip_no, status, wk_no, branch_id, branch_from, branch_to, verification_from, varification_from_date, 
+        verification_to, varification_to_date, branch_from_desc, branch_to_desc, salesman_code, salesman_name, 
+        remarks, slip_date, slip_datetime, trans_status, verified_by,
+        
+slip_code, s_no, product_code, product_desc, rate, cost, qty,  case_qty, d_branch_from, d_branch_to,items
+
+      } = req.body;
+    
+      try {
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
+    
+        // Fetch existing `invoice_master` and check for changes
+        const requestMaster = new sql.Request(transaction);
+        const existingInvoice = await requestMaster
+          .input('slip_no', sql.Decimal(18, 0), slip_no)
+          .query(`SELECT * FROM slip_master WHERE slip_no = @slip_no`);
+    
+        if (existingInvoice.recordset.length > 0) {
+          const existingRecord = existingInvoice.recordset[0];
+          const fieldsToUpdate = [
+            slip_no, status, wk_no, branch_id, branch_from, branch_to,
+           branch_from_desc, branch_to_desc, salesman_code, salesman_name, 
+        remarks
+          ];
+    
+          // Check and update fields only if they have changed
+          const updatedFields = fieldsToUpdate.filter(field => existingRecord[field] !== req.body[field]);
+          if (updatedFields.length > 0) {
+            await requestMaster
+            .input('slip_no',sql.Decimal(18, 0),  slip_no||1)
+            .input('branch_id', sql.VarChar(50), branch_id ||'000')
+            .input('wk_no', sql.Int, wk_no||1)
+            .input('status', sql.Int, 2)
+            .input('branch_from', sql.VarChar(250),  branch_from)
+            .input('branch_to', sql.VarChar(250),  branch_to)
+            .input('branch_from_desc', sql.VarChar(250),    branch_from_desc)
+            .input('branch_to_desc', sql.VarChar(250),    branch_to_desc)
+         
+            .input('salesman_name', sql.VarChar(250), salesman_name)
+            .input('remarks', sql.VarChar(250), remarks)
+            .input('salesman_code', sql.Decimal(18, 0), salesman_code)
+              .query(`
+                UPDATE slip_master
+                SET  branch_id=@branch_id, wk_no=@wk_no,status=@status, branch_from=@branch_from,
+
+                branch_to=@branch_to ,branch_from_desc=@branch_from_desc, branch_to_desc=@ branch_to_desc, 
+              salesman_name=@salesman_name, remarks=@remarks, salesman_code=@salesman_code
+                WHERE slip_no = @slip_no
+              `);
+          }
+        }
+    
+        // Fetch existing items for the given `inv_no`
+        const requestDetail = new sql.Request(transaction);
+        const existingItems = await requestDetail
+          .input('slip_no', sql.Decimal(18, 0), slip_no)
+          .query(`SELECT * FROM slip_detail WHERE slip_code = @slip_no`);
+    
+        const existingItemsMap = new Map();
+        existingItems.recordset.forEach(item => {
+          existingItemsMap.set(item.product_code, item);
+        });
+    
+        const sNoResult = await requestDetail.query(`SELECT ISNULL(MAX(s_no), 0) AS max_s_no FROM slip_detail
+           WHERE slip_code = @slip_no`);
+        let s_no = sNoResult.recordset[0].max_s_no||0;
+    
+        // Compare incoming items with existing items and update accordingly
+        for (const item of items) {
+          if (existingItemsMap.has(item.product_code)) {
+            const existingItem = existingItemsMap.get(item.product_code);
+         
+            const itemToUpdate = [
+              'qty', 'rate', 'discount', 'product_desc', 'retail', 'cost',
+            ];
+    
+            // Check if there are differences in the fields
+            const hasChanges = itemToUpdate.some(field => existingItem[field] !== item[field]);
+    
+            if (hasChanges) {
+              await requestDetail
+              .input('slip_code', sql.Decimal(18, 0), slip_code||1) // Assuming `inv_no` serves as `inv_code`
+              .input('wk_no', sql.Int, wk_no)
+              .input('status', sql.Int, 2)
+            .input('branch_id', sql.VarChar(50), branch_id||"000")
+            .input('s_no', sql.Int, s_no)
+              .input('product_code', sql.Decimal(18, 2), item.product_code)
+              .input('product_desc', sql.VarChar(500), item.product_desc)
+              .input('rate', sql.Decimal(18, 2), item.rate)
+              .input('d_branch_from', sql.VarChar(500), d_branch_from)
+              .input('d_branch_to', sql.VarChar(500),  d_branch_to)
+              .input('qty', sql.Decimal(18, 3), item.qty)
+              .input('case_qty', sql.Decimal(18, 0), item.case_qty || 1) // Optional field
+          
+              .input('cost', sql.Decimal(18, 2), item. cost)
+              .input('remarks', sql.VarChar(250), remarks)
+                .query(`
+                  UPDATE 
+                  
+                  
+                  slip_detail
+                  SET
+                     slip_code=@slip_code,  wk_no=@wk_no,status=@status,branch_id=@branch_id,
+                      s_no=@s_no, product_code=@product_code, product_desc=@product_desc, rate=@rate, d_branch_from=@d_branch_from,
+                     d_branch_to=@d_branch_to, qty=@qty, case_qty=@case_qty, cost=@cost
+            ,remarks=@remarks
+
+               WHERE slip_code = @slip_code AND product_code = @product_code
+
+                `);
+            }
+            existingItemsMap.delete(item.product_code); // Mark as processed
+          } else {
+            // Insert new item
+            s_no++;
+            await requestDetail
+            // .input('inv_code', sql.Decimal(18, 0), inv_code)
+            .input('slip_coded', sql.Decimal(18, 0), slip_code)
+            .input('wk_no', sql.Int, wk_no)
+            .input('status', sql.Int, 2)
+          .input('branch_id', sql.VarChar(50), branch_id||"000")
+          .input('s_no', sql.Int, s_no)
+            .input('product_code', sql.Decimal(18, 2), item.product_code)
+            .input('product_desc', sql.VarChar(500), item.product_desc)
+            .input('rate', sql.Decimal(18, 2), item.rate)
+            .input('d_branch_from', sql.VarChar(500), d_branch_from)
+            .input('d_branch_to', sql.VarChar(500),  d_branch_to)
+            .input('qty', sql.Decimal(18, 3), item.qty)
+            .input('case_qty', sql.Decimal(18, 0), item.case_qty || 1) // Optional field
+        
+            .input('cost', sql.Decimal(18, 2), item. cost)
+            .input('remarks', sql.VarChar(250), remarks)
+            .query(`
+              INSERT INTO slip_detail (
+                slip_code,  wk_no,status,branch_id, s_no, product_code, product_desc, rate, d_branch_from, d_branch_to, qty, case_qty, cost
+                ,remarks
+              )
+              VALUES (
+                @slip_coded,@wk_no,@status, @branch_id,@s_no,  @product_code, @product_desc, @rate, @d_branch_from, @d_branch_to, @qty, @case_qty, @cost
+                ,@remarks
+              )
+            `);
+          }
+        }
+           for (const [product_code, item] of existingItemsMap) {
+            await requestDetail.input('delete_slip_code', sql.Decimal(18, 0), slip_code) // Unique parameter for inv_code
+            .input('delete_product_code', sql.Decimal(18, 0), product_code) // Unique parameter for product_code
+            .query('DELETE FROM slip_detail WHERE slip_code = @delete_slip_code AND product_code = @delete_product_code'
+
+              
+            );
+            // .input('inv_code', sql.Decimal(18, 0), inv_code)
+            // .input('product_code', sql.Decimal(18, 0), product_code) // Bind product_code
+            // .query('DELETE FROM invoice_detail WHERE inv_code = @inv_code AND product_code = @product_code');
+          }
+      
+        // Commit the transaction
+        await transaction.commit();
+        res.json({ success: true, message: 'Slip modified successfully.' });
+      } catch (error) {
+        console.error('Error modifying invoice:', error);
+        res.status(500).json({ success: false, message: 'Error modifying invoice.' });
       }
     });
   app.listen(3001, () => {

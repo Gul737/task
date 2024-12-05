@@ -741,7 +741,7 @@ dt_date:currentDate,
             
   
 
-        <button className="btn btn-success  bg-white txt-dec px-4 fix-btn-size "  id="btn-prev" onClick={() => handlePrevious(voucherNumber)}     disabled={!isModifyClicked}> 
+        <button className="btn btn-success  bg-white txt-dec px-4 fix-btn-size "  id="btn-prev" onClick={() => handlePrevious(voucherNumber)}     disabled={!isModifyClicked} > 
            <i className="bi bi-arrow-left fs-5 fw-bold"></i>
             </button>
      

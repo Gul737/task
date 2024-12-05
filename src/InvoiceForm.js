@@ -816,7 +816,7 @@ else if(cashAmount!=="" ||bankAmount!==""){
           <i className="bi bi-list-ol text-white px-2"></i> List
         </button>
         
-        <button className="btn dark-blue text-white" onClick={handleModify}>
+        <button className="btn dark-blue text-white" onClick={handleModify} >
           <i className="bi bi-pencil-square text-white px-2"></i> Modify
         </button>
         <button className="btn btn-info text-white" onClick={() => window.print()}>
