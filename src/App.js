@@ -8,15 +8,19 @@ import AddCustomer from './Customer';
 import NewP from './NewProduct';
 import Receive from './Receive_voucher'
 import EmployeeRights from './Select_Employee';
-
-
-
+import NewAccount from './CreateNewAccount';
+import DefineAccount from './DefineNewAccount';
+import TransferSlip from './StockTransferSlip';
 
 function App() {
     return (
         <Router>
             <Routes>
-            <Route path="/" element={<EmployeeRights/>} />
+            <Route path="/" element={<TransferSlip/>} />
+            <Route path="/transfer" element={<TransferSlip/>} />
+            <Route path="/account" element={<NewAccount/>} />
+            <Route path="/account_detail" element={<DefineAccount/>} />
+            <Route path="/user_rights" element={<EmployeeRights/>} />
                 {/* <Route path="/" element={<LoginForm />} /> */}
                 <Route path="/login" element={<LoginForm />} />
                 <Route path="/home" element={<MyNavBar />} /> 

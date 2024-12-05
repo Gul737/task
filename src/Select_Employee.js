@@ -429,7 +429,7 @@ const handleUpdate = async () => {
       />
     </div>
         {/* Tabs */}
-        <div
+        {/* <div
           style={{
             display: "flex",
             justifyContent: "center",
@@ -459,13 +459,53 @@ const handleUpdate = async () => {
             </button>
           ))}
         </div>
-  
+   */}
+   <div
+  style={{
+    display: "flex",
+    justifyContent: "center",
+    flexWrap: "wrap",
+    marginBottom: "20px",
+  }}
+  className="w-100"
+>
+  {tabs.map((tab) => (
+    <button
+      key={tab}
+      style={{
+        padding: "7px 15px", // You had a small value for padding, fixed it to be more consistent.
+        margin: "5px",
+        backgroundColor: selectedTab === tab ? "#800080" : "#ddd",
+        color: selectedTab === tab ? "#fff" : "#000",
+        border: "none",
+        borderRadius: "5px",
+        cursor: "pointer",
+        flex: "1 1 auto",
+        textAlign: "center",
+      }}
+      onClick={() => setSelectedTab(tab)}
+      onMouseEnter={(e) => {
+        e.target.style.backgroundColor = "#98198e";
+        e.target.style.color = "#fff";
+      }}
+      onMouseLeave={(e) => {
+        if (selectedTab !== tab) {
+          e.target.style.backgroundColor = "#ddd";
+          e.target.style.color = "#000";
+        }
+      }}
+    >
+      {tab}
+    </button>
+  ))}
+</div>
+
         {/* Two Cards */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "20px",
+            // gap: "20px",
             alignItems: "center",
           }}
         >
@@ -480,7 +520,7 @@ const handleUpdate = async () => {
               boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
             }}
           >
-            <div
+            {/* <div
             className='w-100'
               style={{
                 display: "flex",
@@ -521,7 +561,47 @@ const handleUpdate = async () => {
                     ))}
                   </div>
                 ))}
-            </div>
+            </div> */}
+            <div
+  className="w-100 gap-less"
+  style={{
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0px",
+    justifyContent: "center",
+    alignItems: "flex-start",
+  }}
+>
+  {checkboxData[selectedTab]
+    .reduce((rows, item, index) => {
+      const rowIndex = Math.floor(index / 5); // Group by 5 items
+      if (!rows[rowIndex]) {
+        rows[rowIndex] = [];
+      }
+      rows[rowIndex].push(item);
+      return rows;
+    }, [])
+    .map((column, colIndex) => (
+      <div key={colIndex} className="column-item">
+        {column.map((item) => (
+          <div key={item.name} style={{ marginBottom: "3px" }}>
+            <label style={{ display: "flex", alignItems: "center" }}>
+              <input
+                type="checkbox"
+                checked={item.checked}
+                onChange={(e) =>
+                  handleCheckboxChange(selectedTab, item.name, e.target.checked)
+                }
+                style={{ marginRight: "10px" }}
+              />
+              {item.name}
+            </label>
+          </div>
+        ))}
+      </div>
+    ))}
+</div>
+
           </div>
   
        
@@ -541,8 +621,8 @@ const handleUpdate = async () => {
   }}
 >
 <div>
-  <div className='d-flex gap-3'>
-    <label>
+  <div className='d-flex gap-3' style={{ marginBottom: "3px" }}>
+    <label >
       <input type="checkbox"  checked={checkboxData["New Rights"][0].checked}  onChange={(e) => handleCheckboxChange("New Rights", "CRM", e.target.checked)}/> CRM
     </label>
     <label>
@@ -553,32 +633,32 @@ const handleUpdate = async () => {
 
   {/* Other Checkboxes in One Column */}
  
-    <label>
+    <label style={{ marginBottom: "3px" }}>
       <input type="checkbox" checked={checkboxData["New Rights"][2].checked}    onChange={(e) => handleCheckboxChange("New Rights", "Accounts", e.target.checked)} /> Accounts
     </label>
     <br />
-    <label>
+    <label style={{ marginBottom: "3px" }}>
       <input type="checkbox" checked={checkboxData["New Rights"][3].checked}   onChange={(e) => handleCheckboxChange("New Rights", "Purchase Order", e.target.checked)}/> Purchase Order
     </label>
     <br />
-    <label>
+    <label style={{ marginBottom: "3px" }}>
       <input type="checkbox" checked={checkboxData["New Rights"][4].checked}   onChange={(e) => handleCheckboxChange("New Rights", "Purchase Order Modify", e.target.checked)} /> Purchase Order Modify
     </label>
     <br />
-    <label>
+    <label style={{ marginBottom: "3px" }}>
       <input type="checkbox" /> View Others Accounts Group
     </label>
     <br />
-    <label>
+    <label style={{ marginBottom: "3px" }}>
       <input type="checkbox" checked={checkboxData["New Rights"][6].checked}    onChange={(e) => handleCheckboxChange("New Rights", "View Expense Group", e.target.checked)}  /> View Expense Group
     </label>
     <br />
-    <label>
+    <label style={{ marginBottom: "3px" }}>
       <input type="checkbox"  checked={checkboxData["New Rights"][7].checked}
           onChange={(e) => handleCheckboxChange("New Rights", "View Other Branches", e.target.checked)}/> View Other Branch
     </label>
     <br />
-    <label>
+    <label style={{ marginBottom: "3px" }}>
       <input type="checkbox"  checked={checkboxData["New Rights"][8].checked}
           onChange={(e) => handleCheckboxChange("New Rights", "Fund Transfer", e.target.checked)}
        /> Fund Transfer
@@ -600,7 +680,7 @@ const handleUpdate = async () => {
   </div>
   </div>
   {/* Update Button */}
-  <div style={{ textAlign: "right", marginTop: "20px" }}>
+  {/* <div style={{ textAlign: "right", marginTop: "20px" }}>
     <button
       style={{
         padding: "10px 20px",
@@ -615,9 +695,14 @@ const handleUpdate = async () => {
     >
       UPDATE
     </button>
-  </div>
+  </div> */}
 </div>
+<div className="form-actions last mt-2 fixed-bottom last-form-action-with-total pt-2">
 
+     <div className="d-flex justify-content-end mb-2 w-25 gap-3 align-items-center ft-btns">
+        <button className="btn btn-success  bg-white txt-dec"  onClick={handleUpdate}>UPDATE</button>
+                  </div>
+                  </div>
 </div>
 
         </div>

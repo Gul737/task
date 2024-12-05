@@ -15,6 +15,7 @@
 .urdu-description{
      height: 70%
 }
+
 /* .a
 rrange {
   width: max-content !important;
@@ -264,7 +265,28 @@ width: 100% !important;
    flex-direction: column-reverse;
   }
 }
+.column-item {
+  flex: 1 1 20%;
+  max-width: 100%;
+}
+
 @media (max-width: 768px) {
+  .column-item {
+    flex: 1 1 100%; /* Make it a single column on small screens */
+  }
+  .gap-less{
+    gap:0px !important;
+
+  }
+}
+
+@media (max-width: 768px) {
+  .table-acc{
+    width: 100% !important;
+  }
+  .custom-box {
+    width: 100% !important;
+  }
   .last-vouc-total-box{
     margin-bottom: 15%;
   }
@@ -371,7 +393,39 @@ width: 100% !important;
 
   /* When a radio button is selected (checked), make the circle purple */
   
+  .custom-box {
+    border: 2px solid #98198E ;
+    border-radius: 8px;
+    padding: 20px;
+    /* background-color: #f8f9fa; */
+    position: relative;
+    width: 80%;
+  }
   
+  .custom-box-title {
+    position: absolute;
+    top: -12px;
+    left: 16px;
+    background-color: #FFFFFF;
+    padding: 0 8px;
+    font-weight: bold;
+    color: #98198E ;
+  }
+  
+.nav-tabs .nav-link {
+  color: black !important;
+  border: 1px solid #ddd;
+}
+
+.nav-tabs .nav-link.active {
+  background-color: purple !important;
+  color: white !important;
+}
+
+button.nav-link:hover {
+  background-color: purple;
+  color: white;
+}
   .custom-radio{
     background-color: rgb(173, 165, 165) !important;
   }
@@ -383,6 +437,10 @@ width: 100% !important;
   /* Optional: Ensure focus outline doesn't clash with the purple color */
   .custom-radio:focus {
     box-shadow: 0 0 0 0.25rem rgba(152, 25, 142, 0.5) !important;
+  }
+  .custom-radio:hover {
+    background-color: #af3ea6 !important;
+    border-color:#e204d0 !important ;
   }
 .bg-l2{
   background-color: 

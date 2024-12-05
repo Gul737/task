@@ -1791,7 +1791,23 @@ const manualItem=true;
     
     
 
-
+    app.post('/slip', async (req, res) => {
+      try { 
+        const result = await pool.request()
+        .input('branch_id', sql.VarChar, '000')
+        .query("SELECT MAX(slip_no) AS sp FROM  slip_master");
+       // .query("SELECT MAX(slip_no) AS sp FROM  slip_master WHERE status = 2 and wk_no=1 and branch_id = @branch_id");
+    
+        //console.log('SQL Query Result:', result.recordset);
+        let newInvoiceNumber = (result.recordset[0]?.inv === null) ? 1 : result.recordset[0].inv + 1;
+    
+        res.json({ invoice_number: newInvoiceNumber });
+        //console.log(newInvoiceNumber);
+      } catch (err) {
+        console.error('Query Error: ', err);
+        res.status(500).json({ error: err.message });
+      }
+    });
   app.listen(3001, () => {
     console.log('Backend server is running on port 3001');
   });

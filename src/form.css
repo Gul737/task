@@ -108,12 +108,19 @@
   background-color: #3EBACE;
   border: none;
   transition: background-color 0.3s, transform 0.2s, box-shadow 0.2s;
-}
 
-.form-actions button:hover ,.add:hover  ,.last-btn:hover{
-  background-color: #0056b3; /* Darker shade on hover */
+}
+/* .last-btn{
+  transition: background-color 0.3s, transform 0.2s, box-shadow 0.2s !important;
+  background-color: #800080;
+ 
+} */
+.form-actions button:hover ,.add:hover  {
+  background-color: #0056b3 !important; /* Darker shade on hover */
   transform: translateY(-2px); /* Slight lift effect */
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Adds a shadow */
+  font-weight:500;
+  color: white !important;
 }
 
 .form-actions button:active {
